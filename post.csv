@@ -1,0 +1,4 @@
+id,title,category,platforms,tone,content,lastUpdated
+launch-day,Product Launch Blast,Launch,"Facebook, Twitter (X), GitHub","Upbeat","🚀 We're live! {product} now helps {audience} {value_prop}. Explore the walkthrough → {cta_link} and send us your first impressions.",2024-01-04T15:00:00.000Z
+maintenance-note,Maintenance Heads-up,Status,"Facebook, Twitter (X)","Reassuring","Scheduled maintenance on {maintenance_date}. Expect about {downtime_length} of limited access while we upgrade performance. We'll post the all-clear as soon as we're back.",2024-01-11T09:00:00.000Z
+webinar-invite,Launch Webinar Invite,Events,"Facebook, Twitter (X), Newsletter","Helpful","🎓 Learn how {product} works in a live 25-minute session on {event_date}. Bring your questions—our team will cover setup, success stories, and the roadmap. Register here: {registration_link}",2024-01-17T18:30:00.000Z
