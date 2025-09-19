@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Key Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .platform { margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; display: flex; align-items: flex-start; }
+        .platform img { width: 50px; height: auto; margin-right: 20px; }
+        .platform-content { flex: 1; }
+        .platform h2 { margin-top: 0; }
+        input { display: block; margin-bottom: 10px; width: 100%; }
+        button { margin-right: 10px; }
+        #console { height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background: #f8f8f8; }
+        .links { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>API Key Manager</h1>
+    
+    <div id="facebook" class="platform">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook Logo">
+        <div class="platform-content">
+            <h2>Facebook</h2>
+            <label>App ID: <input type="text" id="fb_app_id"></label>
+            <label>App Secret: <input type="text" id="fb_app_secret"></label>
+            <label>Short-lived User Access Token: <input type="text" id="fb_short_token"></label>
+            <label>Long-lived User Access Token: <input type="text" id="fb_long_token" readonly></label>
+            <button onclick="verifyFacebook()">Verify</button>
+            <button onclick="exchangeFacebookToken()">Exchange for Long-term Token</button>
+            <button onclick="testPostFacebook()">Test Post</button>
+        </div>
+    </div>
+    
+    <div id="github" class="platform">
+        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo">
+        <div class="platform-content">
+            <h2>GitHub</h2>
+            <label>Client ID (for OAuth App): <input type="text" id="gh_client_id"></label>
+            <label>Client Secret (for OAuth App): <input type="text" id="gh_client_secret"></label>
+            <label>Personal Access Token: <input type="text" id="gh_pat"></label>
+            <label>Access Token (from OAuth): <input type="text" id="gh_access_token"></label>
+            <button onclick="verifyGitHub()">Verify</button>
+            <button onclick="testPostGitHub()">Test Post (Create Gist)</button>
+        </div>
+    </div>
+    
+    <div id="twitter" class="platform">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg" alt="Twitter Logo">
+        <div class="platform-content">
+            <h2>Twitter (X)</h2>
+            <label>Client ID: <input type="text" id="tw_client_id"></label>
+            <label>Client Secret: <input type="text" id="tw_client_secret"></label>
+            <label>Access Token: <input type="text" id="tw_access_token"></label>
+            <label>Refresh Token: <input type="text" id="tw_refresh_token"></label>
+            <button onclick="verifyTwitter()">Verify</button>
+            <button onclick="refreshTwitterToken()">Refresh Token</button>
+            <button onclick="testPostTwitter()">Test Post</button>
+        </div>
+    </div>
+    
+    <div id="openai" class="platform">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/OpenAI_Logo.svg" alt="OpenAI Logo">
+        <div class="platform-content">
+            <h2>OpenAI</h2>
+            <label>API Key: <input type="text" id="oai_api_key"></label>
+            <button onclick="verifyOpenAI()">Verify</button>
+            <button onclick="testPostOpenAI()">Test Request</button>
+        </div>
+    </div>
+    
+    <button onclick="saveToCSV()">Save All to CSV</button>
+    
+    <h3>Console</h3>
+    <div id="console"></div>
+    
+    <div class="links">
+        <h3>API Explorers</h3>
+        <ul>
+            <li><a href="https://developers.facebook.com/tools/explorer/" target="_blank">Facebook Graph API Explorer</a></li>
+            <li><a href="https://docs.github.com/en/rest" target="_blank">GitHub REST API Docs</a></li>
+            <li><a href="https://developer.twitter.com/en/docs/twitter-api/tools-and-libraries/api-reference" target="_blank">Twitter (X) API Reference</a></li>
+            <li><a href="https://platform.openai.com/docs/api-reference" target="_blank">OpenAI API Reference</a></li>
+        </ul>
+    </div>
+
+    <script>
+        function log(message, isError = false) {
+            const consoleDiv = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            if (isError) entry.style.color = 'red';
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        async function verifyFacebook() {
+            const appId = document.getElementById('fb_app_id').value;
+            const token = document.getElementById('fb_long_token').value || document.getElementById('fb_short_token').value;
+            if (!appId || !token) {
+                log('Missing App ID or Token for Facebook', true);
+                return;
+            }
+            try {
+                const meResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${token}`);
+                if (!meResponse.ok) throw new Error('Failed to fetch /me: ' + (await meResponse.text()));
+                log('Facebook read access verified (fetched /me successfully)');
+                log('Facebook verification successful (read access confirmed; write assumes permissions)');
+            } catch (error) {
+                log('Facebook verification failed: ' + error.message, true);
+            }
+        }
+
+        async function exchangeFacebookToken() {
+            const appId = document.getElementById('fb_app_id').value;
+            const appSecret = document.getElementById('fb_app_secret').value;
+            const shortToken = document.getElementById('fb_short_token').value;
+            if (!appId || !appSecret || !shortToken) {
+                log('Missing fields for Facebook token exchange', true);
+                return;
+            }
+            try {
+                const response = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+                document.getElementById('fb_long_token').value = data.access_token;
+                log('Facebook long-term token obtained successfully');
+            } catch (error) {
+                log('Facebook token exchange failed: ' + error.message, true);
+            }
+        }
+
+        async function testPostFacebook() {
+            const token = document.getElementById('fb_long_token').value || document.getElementById('fb_short_token').value;
+            if (!token) {
+                log('Missing Token for Facebook test post', true);
+                return;
+            }
+            try {
+                const response = await fetch(`https://graph.facebook.com/v20.0/me/feed?access_token=${token}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'Test post from API Key Manager' })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+                log('Facebook test post successful: Post ID ' + data.id);
+            } catch (error) {
+                log('Facebook test post failed: ' + error.message, true);
+            }
+        }
+
+        async function verifyGitHub() {
+            const pat = document.getElementById('gh_pat').value;
+            const accessToken = document.getElementById('gh_access_token').value;
+            const token = pat || accessToken;
+            if (!token) {
+                log('Missing token for GitHub', true);
+                return;
+            }
+            try {
+                const response = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed to fetch user: ' + (await response.text()));
+                log('GitHub read access verified (fetched user successfully)');
+                log('GitHub verification successful (read access confirmed; write assumes scopes)');
+            } catch (error) {
+                log('GitHub verification failed: ' + error.message, true);
+            }
+        }
+
+        async function testPostGitHub() {
+            const pat = document.getElementById('gh_pat').value;
+            const accessToken = document.getElementById('gh_access_token').value;
+            const token = pat || accessToken;
+            if (!token) {
+                log('Missing token for GitHub test post', true);
+                return;
+            }
+            try {
+                const response = await fetch('https://api.github.com/gists', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        description: 'Test gist from API Key Manager',
+                        public: false,
+                        files: { 'test.txt': { content: 'Test content' } }
+                    })
+                });
+                if (!response.ok) throw new Error('Failed to create gist: ' + (await response.text()));
+                const data = await response.json();
+                log('GitHub test post (gist) successful: Gist URL ' + data.html_url);
+            } catch (error) {
+                log('GitHub test post failed: ' + error.message, true);
+            }
+        }
+
+        async function verifyTwitter() {
+            const accessToken = document.getElementById('tw_access_token').value;
+            if (!accessToken) {
+                log('Missing access token for Twitter', true);
+                return;
+            }
+            try {
+                const response = await fetch('https://api.twitter.com/2/users/me', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (!response.ok) throw new Error('Failed to fetch /users/me: ' + (await response.text()));
+                log('Twitter read access verified (fetched /users/me successfully)');
+                log('Twitter verification successful (read access confirmed; write assumes permissions)');
+            } catch (error) {
+                log('Twitter verification failed: ' + error.message, true);
+            }
+        }
+
+        async function refreshTwitterToken() {
+            const clientId = document.getElementById('tw_client_id').value;
+            const clientSecret = document.getElementById('tw_client_secret').value;
+            const refreshToken = document.getElementById('tw_refresh_token').value;
+            if (!clientId || !clientSecret || !refreshToken) {
+                log('Missing fields for Twitter token refresh', true);
+                return;
+            }
+            try {
+                const auth = btoa(`${clientId}:${clientSecret}`);
+                const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Basic ${auth}`,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `grant_type=refresh_token&refresh_token=${refreshToken}`
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error + ': ' + data.error_description);
+                document.getElementById('tw_access_token').value = data.access_token;
+                document.getElementById('tw_refresh_token').value = data.refresh_token || refreshToken;
+                log('Twitter token refreshed successfully');
+            } catch (error) {
+                log('Twitter token refresh failed: ' + error.message, true);
+            }
+        }
+
+        async function testPostTwitter() {
+            const accessToken = document.getElementById('tw_access_token').value;
+            if (!accessToken) {
+                log('Missing access token for Twitter test post', true);
+                return;
+            }
+            try {
+                const response = await fetch('https://api.twitter.com/2/tweets', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: 'Test post from API Key Manager' })
+                });
+                if (!response.ok) throw new Error('Failed to post tweet: ' + (await response.text()));
+                const data = await response.json();
+                log('Twitter test post successful: Tweet ID ' + data.data.id);
+            } catch (error) {
+                log('Twitter test post failed: ' + error.message, true);
+            }
+        }
+
+        async function verifyOpenAI() {
+            const apiKey = document.getElementById('oai_api_key').value;
+            if (!apiKey) {
+                log('Missing API key for OpenAI', true);
+                return;
+            }
+            try {
+                const response = await fetch('https://api.openai.com/v1/models', {
+                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
+                if (!response.ok) throw new Error('Failed to fetch models: ' + (await response.text()));
+                log('OpenAI read access verified (fetched models successfully)');
+                log('OpenAI verification successful (access confirmed)');
+            } catch (error) {
+                log('OpenAI verification failed: ' + error.message, true);
+            }
+        }
+
+        async function testPostOpenAI() {
+            const apiKey = document.getElementById('oai_api_key').value;
+            if (!apiKey) {
+                log('Missing API key for OpenAI test request', true);
+                return;
+            }
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [{ role: 'user', content: 'Say this is a test' }]
+                    })
+                });
+                if (!response.ok) throw new Error('Failed to get completion: ' + (await response.text()));
+                log('OpenAI test request successful');
+            } catch (error) {
+                log('OpenAI test request failed: ' + error.message, true);
+            }
+        }
+
+        function saveToCSV() {
+            const data = [];
+            data.push(['Platform', 'Type', 'Value']);
+            
+            // Facebook
+            data.push(['Facebook', 'App ID', document.getElementById('fb_app_id').value]);
+            data.push(['Facebook', 'App Secret', document.getElementById('fb_app_secret').value]);
+            data.push(['Facebook', 'Short-lived Token', document.getElementById('fb_short_token').value]);
+            data.push(['Facebook', 'Long-lived Token', document.getElementById('fb_long_token').value]);
+            
+            // GitHub
+            data.push(['GitHub', 'Client ID', document.getElementById('gh_client_id').value]);
+            data.push(['GitHub', 'Client Secret', document.getElementById('gh_client_secret').value]);
+            data.push(['GitHub', 'Personal Access Token', document.getElementById('gh_pat').value]);
+            data.push(['GitHub', 'Access Token', document.getElementById('gh_access_token').value]);
+            
+            // Twitter
+            data.push(['Twitter', 'Client ID', document.getElementById('tw_client_id').value]);
+            data.push(['Twitter', 'Client Secret', document.getElementById('tw_client_secret').value]);
+            data.push(['Twitter', 'Access Token', document.getElementById('tw_access_token').value]);
+            data.push(['Twitter', 'Refresh Token', document.getElementById('tw_refresh_token').value]);
+            
+            // OpenAI
+            data.push(['OpenAI', 'API Key', document.getElementById('oai_api_key').value]);
+            
+            const csvContent = data.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'api_keys.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            log('Saved to CSV successfully');
+        }
+    </script>
+</body>
+</html>
