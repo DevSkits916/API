@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Composer • API Key Manager</title>
+    <meta name="description" content="Craft updates and publish them to Facebook, GitHub, Twitter (X), and OpenAI using the tokens stored on the Credentials tab.">
+    <style>
+
+        :root {
+            --bg: #f6f8fb;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --muted: #52606d;
+            --border: #e2e8f0;
+            --accent: #6366f1;
+            --accent-strong: #4f46e5;
+            --success: #22c55e;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --console-bg: #0f172a;
+            --console-border: #1e293b;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-card: 0 25px 50px -20px rgba(15, 23, 42, 0.25);
+            --shadow-button: 0 18px 35px -18px rgba(79, 70, 229, 0.65);
+            --shadow-button-hover: 0 24px 45px -20px rgba(79, 70, 229, 0.7);
+            --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-sans);
+            color: var(--text);
+            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0) 55%), var(--bg);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        a {
+            color: var(--accent-strong);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .page-header {
+            padding: 3rem 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(14, 165, 233, 0.12));
+        }
+
+        .page-header__content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .page-header__title {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            margin-bottom: 0.75rem;
+        }
+
+        .page-header__subtitle {
+            margin: 0 auto;
+            max-width: 620px;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .page-nav {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            padding: 0.45rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid rgba(99, 102, 241, 0.18);
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(6px);
+        }
+
+        .page-nav__link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.45rem 1rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--accent-strong);
+            transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        .page-nav__link:hover {
+            background: rgba(99, 102, 241, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .page-nav__link.is-active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(79, 70, 229, 0.28));
+            color: var(--accent-strong);
+            box-shadow: 0 10px 24px -18px rgba(79, 70, 229, 0.6);
+        }
+
+        .page-nav__link:focus-visible {
+            outline: 3px solid rgba(99, 102, 241, 0.3);
+            outline-offset: 2px;
+        }
+
+        .page-layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.25rem 1.5rem 3rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .page-layout {
+                grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+                align-items: start;
+            }
+        }
+
+        .platform-grid {
+            display: grid;
+            gap: 1.75rem;
+        }
+
+        @media (min-width: 768px) {
+            .platform-grid {
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            }
+        }
+
+        .platform-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .platform-card__header {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .platform-card__logo {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-md);
+            background: rgba(238, 242, 255, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .platform-card__logo img {
+            max-width: 36px;
+            max-height: 36px;
+        }
+
+        .platform-card__summary {
+            margin: 0.35rem 0 0;
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .platform-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .input-label {
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 0.65rem 0.85rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.92);
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .input-control:focus-visible {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+
+        .input-control[readonly] {
+            background: rgba(248, 250, 252, 0.9);
+            color: var(--muted);
+        }
+
+        .input-with-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .input-with-toggle .input-control {
+            flex: 1;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+            padding: 0.6rem 1.05rem;
+        }
+
+        .button--primary {
+            background: linear-gradient(135deg, #6366f1, #4338ca);
+            color: #ffffff;
+            box-shadow: var(--shadow-button);
+        }
+
+        .button--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-button-hover);
+        }
+
+        .button--primary:focus-visible {
+            outline: 3px solid rgba(99, 102, 241, 0.3);
+            outline-offset: 2px;
+        }
+
+        .button--secondary {
+            background: rgba(15, 23, 42, 0.06);
+            color: var(--text);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .button--secondary:hover {
+            background: rgba(15, 23, 42, 0.12);
+        }
+
+        .button--tertiary {
+            background: rgba(99, 102, 241, 0.14);
+            color: var(--accent-strong);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.72rem;
+            padding: 0.45rem 0.75rem;
+        }
+
+        .button--tertiary:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .button--ghost {
+            background: transparent;
+            color: var(--accent-strong);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+        }
+
+        .button--ghost:hover {
+            background: rgba(79, 70, 229, 0.08);
+        }
+
+        .button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+        }
+
+        .button.is-busy::after {
+            content: '';
+            width: 0.9rem;
+            height: 0.9rem;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.35rem;
+        }
+
+        .action-row--end {
+            justify-content: flex-end;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .actions-panel,
+        .console-panel,
+        .resources {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+        }
+
+        .actions-panel__buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .actions-panel__hint {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .console-panel__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .console-log {
+            height: 360px;
+            overflow-y: auto;
+            background: var(--console-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--console-border);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            font-family: var(--font-mono);
+            color: #e2e8f0;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            border-left: 3px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 0.55rem 0.7rem;
+            background: rgba(148, 163, 184, 0.12);
+            font-size: 0.86rem;
+        }
+
+        .log-entry__time {
+            color: rgba(226, 232, 240, 0.65);
+            font-variant-numeric: tabular-nums;
+            min-width: 72px;
+        }
+
+        .log-entry__message {
+            flex: 1;
+        }
+
+        .log-entry--success {
+            border-left-color: rgba(34, 197, 94, 0.9);
+            background: rgba(34, 197, 94, 0.14);
+            color: #bbf7d0;
+        }
+
+        .log-entry--error {
+            border-left-color: rgba(248, 113, 113, 0.95);
+            background: rgba(248, 113, 113, 0.16);
+            color: #fecaca;
+        }
+
+        .log-entry--info {
+            border-left-color: rgba(59, 130, 246, 0.85);
+            background: rgba(59, 130, 246, 0.16);
+            color: #bfdbfe;
+        }
+
+        .resources h2 {
+            margin-bottom: 1rem;
+        }
+
+        .resource-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 0.7rem;
+        }
+
+        .resource-list a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .resource-list a::after {
+            content: '↗';
+            font-size: 0.8rem;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .page-layout--composer {
+            gap: 2.5rem;
+        }
+
+        .composer-card {
+            gap: 1.5rem;
+        }
+
+        .composer-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .target-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+        }
+
+        .target-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.6rem;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            background: rgba(248, 250, 252, 0.85);
+            font-size: 0.9rem;
+        }
+
+        .target-toggle input {
+            accent-color: var(--accent-strong);
+        }
+
+        .target-toggle.is-disabled {
+            opacity: 0.55;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.83rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+            background: rgba(148, 163, 184, 0.18);
+            color: var(--muted);
+        }
+
+        .status-chip--ready {
+            background: rgba(34, 197, 94, 0.16);
+            color: var(--success);
+            border-color: rgba(34, 197, 94, 0.32);
+        }
+
+        .status-chip--missing {
+            background: rgba(239, 68, 68, 0.16);
+            color: var(--error);
+            border-color: rgba(239, 68, 68, 0.34);
+        }
+
+        .platform-status {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .message-input {
+            min-height: 140px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .platform-card--disabled {
+            opacity: 0.75;
+        }
+
+        .platform-card__hint {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .platform-grid--composer {
+            display: grid;
+            gap: 1.75rem;
+        }
+
+        @media (min-width: 768px) {
+            .platform-grid--composer {
+                grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .page-layout--composer {
+                grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .platform-card__header {
+                align-items: flex-start;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header__content">
+            <nav class="page-nav" aria-label="Primary">
+                <a href="index.html" class="page-nav__link">Credentials</a>
+                <a href="composer.html" class="page-nav__link is-active">Post Composer</a>
+            </nav>
+            <h1 class="page-header__title">Cross-Platform Post Composer</h1>
+            <p class="page-header__subtitle">Craft updates and publish them with the credentials you've already validated on the main tab.</p>
+        </div>
+    </header>
+
+    <main class="page-layout page-layout--composer">
+        <section class="composer-content" aria-label="Post composer workspace">
+            <article class="platform-card composer-card" id="broadcast-card">
+                <header class="platform-card__header">
+                    <div>
+                        <h2 class="platform-card__title">Broadcast message</h2>
+                        <p class="platform-card__summary">Write one update to share everywhere. Override it on the cards below when a platform needs bespoke copy.</p>
+                    </div>
+                </header>
+                <div class="form-row">
+                    <label class="input-label" for="broadcast_message">Broadcast message</label>
+                    <textarea class="input-control message-input" id="broadcast_message" placeholder="Share product news, release notes, or announcements…" autocomplete="off"></textarea>
+                </div>
+                <div class="composer-meta">
+                    <span id="selected-summary">0 platforms selected</span>
+                    <span id="broadcast-char-count">0 characters</span>
+                </div>
+                <div class="form-row">
+                    <span class="input-label">Targets</span>
+                    <div class="target-list" role="group" aria-label="Select platforms to include">
+                        <label class="target-toggle">
+                            <input type="checkbox" value="facebook" data-platform-target checked>
+                            <span>Facebook</span>
+                        </label>
+                        <label class="target-toggle">
+                            <input type="checkbox" value="github" data-platform-target checked>
+                            <span>GitHub</span>
+                        </label>
+                        <label class="target-toggle">
+                            <input type="checkbox" value="twitter" data-platform-target checked>
+                            <span>Twitter (X)</span>
+                        </label>
+                        <label class="target-toggle">
+                            <input type="checkbox" value="openai" data-platform-target checked>
+                            <span>OpenAI</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button type="button" class="button button--primary" data-action="postSelected">Post to selected platforms</button>
+                    <button type="button" class="button button--secondary" data-action="resetMessages">Reset messages</button>
+                </div>
+            </article>
+
+            <div class="platform-grid platform-grid--composer" aria-label="Platform specific composers">
+                <article class="platform-card platform-card--composer" data-platform-card="facebook">
+                    <header class="platform-card__header">
+                        <div class="platform-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook logo">
+                        </div>
+                        <div>
+                            <h2 class="platform-card__title">Facebook</h2>
+                            <p class="platform-card__summary">Publish to the profile feed using your stored user token.</p>
+                        </div>
+                    </header>
+                    <div class="platform-status">
+                        <span class="status-chip status-chip--missing" data-status-for="facebook">Looking for credentials…</span>
+                        <a class="button button--ghost" href="index.html#facebook">Manage credentials</a>
+                    </div>
+                    <p class="platform-card__hint">Leave the override blank to reuse the broadcast message.</p>
+                    <div class="form-row">
+                        <label class="input-label" for="facebook-message">Facebook message</label>
+                        <textarea class="input-control message-input" id="facebook-message" data-message-for="facebook" rows="5" placeholder="Optional Facebook-specific message" autocomplete="off"></textarea>
+                    </div>
+                    <div class="action-row action-row--end">
+                        <button type="button" class="button button--secondary" data-copy-broadcast="facebook">Use broadcast message</button>
+                        <button type="button" class="button button--primary" data-post-platform="facebook">Post to Facebook</button>
+                    </div>
+                </article>
+
+                <article class="platform-card platform-card--composer" data-platform-card="github">
+                    <header class="platform-card__header">
+                        <div class="platform-card__logo">
+                            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub logo">
+                        </div>
+                        <div>
+                            <h2 class="platform-card__title">GitHub</h2>
+                            <p class="platform-card__summary">Create a private Gist that archives your broadcast.</p>
+                        </div>
+                    </header>
+                    <div class="platform-status">
+                        <span class="status-chip status-chip--missing" data-status-for="github">Looking for credentials…</span>
+                        <a class="button button--ghost" href="index.html#github">Manage credentials</a>
+                    </div>
+                    <p class="platform-card__hint">Store longer release notes or changelog entries in a private Gist.</p>
+                    <div class="form-row">
+                        <label class="input-label" for="github-message">Gist content override</label>
+                        <textarea class="input-control message-input" id="github-message" data-message-for="github" rows="5" placeholder="Optional GitHub-specific content" autocomplete="off"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label class="input-label" for="github-filename">Filename</label>
+                        <input class="input-control" type="text" id="github-filename" placeholder="broadcast-update.txt" autocomplete="off" data-config-for="github" data-config-key="filename">
+                    </div>
+                    <div class="form-row">
+                        <label class="input-label" for="github-description">Gist description</label>
+                        <input class="input-control" type="text" id="github-description" placeholder="Broadcast from API Key Manager" autocomplete="off" data-config-for="github" data-config-key="description">
+                    </div>
+                    <div class="action-row action-row--end">
+                        <button type="button" class="button button--secondary" data-copy-broadcast="github">Use broadcast message</button>
+                        <button type="button" class="button button--primary" data-post-platform="github">Post to GitHub</button>
+                    </div>
+                </article>
+
+                <article class="platform-card platform-card--composer" data-platform-card="twitter">
+                    <header class="platform-card__header">
+                        <div class="platform-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg" alt="Twitter (X) logo">
+                        </div>
+                        <div>
+                            <h2 class="platform-card__title">Twitter (X)</h2>
+                            <p class="platform-card__summary">Share short updates with the tweet API v2.</p>
+                        </div>
+                    </header>
+                    <div class="platform-status">
+                        <span class="status-chip status-chip--missing" data-status-for="twitter">Looking for credentials…</span>
+                        <a class="button button--ghost" href="index.html#twitter">Manage credentials</a>
+                    </div>
+                    <p class="platform-card__hint">Tweets can include up to 280 characters. The composer will warn you if you go over.</p>
+                    <div class="form-row">
+                        <label class="input-label" for="twitter-message">Tweet override</label>
+                        <textarea class="input-control message-input" id="twitter-message" data-message-for="twitter" rows="4" placeholder="Optional tweet text" autocomplete="off"></textarea>
+                    </div>
+                    <div class="action-row action-row--end">
+                        <button type="button" class="button button--secondary" data-copy-broadcast="twitter">Use broadcast message</button>
+                        <button type="button" class="button button--primary" data-post-platform="twitter">Post to Twitter (X)</button>
+                    </div>
+                </article>
+
+                <article class="platform-card platform-card--composer" data-platform-card="openai">
+                    <header class="platform-card__header">
+                        <div class="platform-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/OpenAI_Logo.svg" alt="OpenAI logo">
+                        </div>
+                        <div>
+                            <h2 class="platform-card__title">OpenAI</h2>
+                            <p class="platform-card__summary">Send the message as a chat completion request.</p>
+                        </div>
+                    </header>
+                    <div class="platform-status">
+                        <span class="status-chip status-chip--missing" data-status-for="openai">Looking for credentials…</span>
+                        <a class="button button--ghost" href="index.html#openai">Manage credentials</a>
+                    </div>
+                    <p class="platform-card__hint">Use this to ping a model with the same content or a platform-specific prompt.</p>
+                    <div class="form-row">
+                        <label class="input-label" for="openai-message">User prompt override</label>
+                        <textarea class="input-control message-input" id="openai-message" data-message-for="openai" rows="5" placeholder="Optional prompt override" autocomplete="off"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label class="input-label" for="openai-model">Model</label>
+                        <input class="input-control" type="text" id="openai-model" value="gpt-3.5-turbo" autocomplete="off" data-config-for="openai" data-config-key="model">
+                    </div>
+                    <div class="form-row">
+                        <label class="input-label" for="openai-system">System message</label>
+                        <textarea class="input-control" id="openai-system" rows="3" placeholder="Optional system prompt" autocomplete="off" data-config-for="openai" data-config-key="system"></textarea>
+                    </div>
+                    <div class="action-row action-row--end">
+                        <button type="button" class="button button--secondary" data-copy-broadcast="openai">Use broadcast message</button>
+                        <button type="button" class="button button--primary" data-post-platform="openai">Send to OpenAI</button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <aside class="sidebar">
+            <section class="actions-panel" aria-label="Composer utilities">
+                <h2>Utilities</h2>
+                <div class="actions-panel__buttons">
+                    <button type="button" class="button button--secondary" data-action="refreshStatus">Refresh connection status</button>
+                    <button type="button" class="button button--secondary" data-action="clearConsole">Clear console</button>
+                </div>
+                <p class="actions-panel__hint">Tokens, overrides, and settings are cached locally so the composer can reuse them. Clear your browser storage when you're done.</p>
+            </section>
+
+            <section class="console-panel" aria-labelledby="console-title">
+                <div class="console-panel__header">
+                    <h2 id="console-title">Composer console</h2>
+                </div>
+                <div id="console" class="console-log" role="log" aria-live="polite" aria-atomic="false"></div>
+            </section>
+
+            <section class="resources" aria-labelledby="resource-links-title">
+                <h2 id="resource-links-title">Posting docs</h2>
+                <ul class="resource-list">
+                    <li><a href="https://developers.facebook.com/docs/graph-api/reference/v20.0/user/feed" target="_blank" rel="noopener noreferrer">Facebook Feed API</a></li>
+                    <li><a href="https://docs.github.com/en/rest/gists/gists" target="_blank" rel="noopener noreferrer">GitHub Gist API</a></li>
+                    <li><a href="https://developer.twitter.com/en/docs/twitter-api/tweets/manage-tweets/api-reference" target="_blank" rel="noopener noreferrer">Twitter (X) Tweets API</a></li>
+                    <li><a href="https://platform.openai.com/docs/api-reference/chat" target="_blank" rel="noopener noreferrer">OpenAI Chat Completions</a></li>
+                </ul>
+            </section>
+        </aside>
+    </main>
+
+    <script>
+        (() => {
+            const consoleEl = document.getElementById('console');
+            const broadcastEl = document.getElementById('broadcast_message');
+            const selectedSummaryEl = document.getElementById('selected-summary');
+            const charCountEl = document.getElementById('broadcast-char-count');
+            const platformCheckboxes = Array.from(document.querySelectorAll('[data-platform-target]'));
+            const overrideMap = new Map();
+            document.querySelectorAll('textarea[data-message-for]').forEach((textarea) => {
+                overrideMap.set(textarea.dataset.messageFor, textarea);
+            });
+            const statusChips = new Map();
+            document.querySelectorAll('[data-status-for]').forEach((chip) => {
+                statusChips.set(chip.dataset.statusFor, chip);
+            });
+            const platformCards = new Map();
+            document.querySelectorAll('[data-platform-card]').forEach((card) => {
+                platformCards.set(card.dataset.platformCard, card);
+            });
+            const platformButtons = new Map();
+            document.querySelectorAll('[data-post-platform]').forEach((button) => {
+                platformButtons.set(button.dataset.postPlatform, button);
+            });
+            const targetLabels = new Map();
+            platformCheckboxes.forEach((checkbox) => {
+                const label = checkbox.closest('.target-toggle');
+                if (label) {
+                    targetLabels.set(checkbox.value, label);
+                }
+                checkbox.addEventListener('change', () => {
+                    updateSelectedCount();
+                });
+            });
+            const storagePrefix = 'akm:';
+            const storageAvailable = (() => {
+                try {
+                    const key = storagePrefix + '__test__';
+                    localStorage.setItem(key, '1');
+                    localStorage.removeItem(key);
+                    return true;
+                } catch {
+                    return false;
+                }
+            })();
+
+            const storageKeyFor = (suffix) => storagePrefix + suffix;
+
+            const getStoredValue = (id) => {
+                if (!storageAvailable) {
+                    return '';
+                }
+                return localStorage.getItem(storageKeyFor(id)) ?? '';
+            };
+
+            const setStoredValue = (suffix, value, { preserveWhitespace = false } = {}) => {
+                if (!storageAvailable) {
+                    return;
+                }
+                const key = storageKeyFor(suffix);
+                const trimmed = value?.trim() ?? '';
+                if (trimmed) {
+                    localStorage.setItem(key, preserveWhitespace ? value : trimmed);
+                } else {
+                    localStorage.removeItem(key);
+                }
+            };
+
+            const getStoredText = (suffix) => {
+                if (!storageAvailable) {
+                    return '';
+                }
+                return localStorage.getItem(storageKeyFor(suffix)) ?? '';
+            };
+
+            const configInputs = {};
+            document.querySelectorAll('[data-config-for]').forEach((input) => {
+                const platform = input.dataset.configFor;
+                const key = input.dataset.configKey;
+                if (!configInputs[platform]) {
+                    configInputs[platform] = {};
+                }
+                configInputs[platform][key] = input;
+                if (storageAvailable) {
+                    const stored = getStoredText('config:' + platform + ':' + key);
+                    if (stored) {
+                        input.value = stored;
+                    }
+                }
+                input.addEventListener('input', () => {
+                    setStoredValue('config:' + platform + ':' + key, input.value, { preserveWhitespace: false });
+                });
+            });
+
+            const readConfig = (platform) => {
+                const group = configInputs[platform];
+                if (!group) {
+                    return {};
+                }
+                return Object.fromEntries(Object.entries(group).map(([key, input]) => [key, input.value.trim()]));
+            };
+
+            const log = (message, type = 'info') => {
+                if (!consoleEl) return;
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-entry--${type}`;
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'log-entry__time';
+                timeSpan.textContent = new Date().toLocaleTimeString();
+
+                const messageSpan = document.createElement('span');
+                messageSpan.className = 'log-entry__message';
+                messageSpan.textContent = message;
+
+                entry.append(timeSpan, messageSpan);
+                consoleEl.appendChild(entry);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            };
+
+            const updateBroadcastCharCount = () => {
+                if (!broadcastEl || !charCountEl) {
+                    return;
+                }
+                const count = broadcastEl.value.length;
+                const label = count === 1 ? 'character' : 'characters';
+                charCountEl.textContent = `${count} ${label}`;
+            };
+
+            const updateSelectedCount = () => {
+                if (!selectedSummaryEl) {
+                    return;
+                }
+                const count = platformCheckboxes.filter((checkbox) => checkbox.checked && !checkbox.disabled).length;
+                const label = count === 1 ? 'platform' : 'platforms';
+                selectedSummaryEl.textContent = `${count} ${label} selected`;
+            };
+
+            if (broadcastEl) {
+                if (storageAvailable) {
+                    const storedMessage = getStoredText('broadcast_message');
+                    if (storedMessage) {
+                        broadcastEl.value = storedMessage;
+                    }
+                }
+                updateBroadcastCharCount();
+                broadcastEl.addEventListener('input', () => {
+                    updateBroadcastCharCount();
+                    setStoredValue('broadcast_message', broadcastEl.value, { preserveWhitespace: true });
+                });
+            }
+
+            overrideMap.forEach((textarea, platform) => {
+                if (storageAvailable) {
+                    const stored = getStoredText('message:' + platform);
+                    if (stored) {
+                        textarea.value = stored;
+                    }
+                }
+                textarea.addEventListener('input', () => {
+                    setStoredValue('message:' + platform, textarea.value, { preserveWhitespace: true });
+                });
+            });
+
+            updateSelectedCount();
+
+            const getSelectedPlatforms = () => platformCheckboxes
+                .filter((checkbox) => checkbox.checked && !checkbox.disabled)
+                .map((checkbox) => checkbox.value);
+
+            const getMessageFor = (platform) => {
+                const override = overrideMap.get(platform)?.value ?? '';
+                if (override.trim()) {
+                    return override.trim();
+                }
+                if (broadcastEl && broadcastEl.value.trim()) {
+                    return broadcastEl.value.trim();
+                }
+                throw new Error('Add a broadcast message or platform-specific override before posting.');
+            };
+
+            const platforms = {
+                facebook: {
+                    name: 'Facebook',
+                    getContext: () => {
+                        const longToken = getStoredValue('fb_long_token');
+                        const shortToken = getStoredValue('fb_short_token');
+                        const token = longToken || shortToken;
+                        const detail = token
+                            ? (longToken ? 'Long-lived user token detected.' : 'Short-lived user token detected.')
+                            : 'No stored Facebook access token. Add one on the Credentials tab.';
+                        return { ready: Boolean(token), detail, token };
+                    },
+                    post: async ({ message, context }) => {
+                        const url = 'https://graph.facebook.com/v20.0/me/feed?access_token=' + encodeURIComponent(context.token);
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message })
+                        });
+                        const data = await response.json();
+                        if (!response.ok || data.error) {
+                            const errorMessage = data?.error?.message || response.statusText;
+                            throw new Error(`Facebook post failed. ${errorMessage}`);
+                        }
+                        return data?.id ? `Facebook post published (ID: ${data.id}).` : 'Facebook post published.';
+                    }
+                },
+                github: {
+                    name: 'GitHub',
+                    getContext: () => {
+                        const pat = getStoredValue('gh_pat');
+                        const oauth = getStoredValue('gh_access_token');
+                        const token = pat || oauth;
+                        const detail = token
+                            ? (pat ? 'Using personal access token.' : 'Using OAuth access token.')
+                            : 'No stored GitHub token. Save one on the Credentials tab.';
+                        return { ready: Boolean(token), detail, token, isPat: Boolean(pat) };
+                    },
+                    post: async ({ message, context }) => {
+                        const config = readConfig('github');
+                        const fileName = config.filename || ('broadcast-' + new Date().toISOString().slice(0, 10) + '.txt');
+                        const gistDescription = config.description || 'Broadcast from API Key Manager';
+                        const response = await fetch('https://api.github.com/gists', {
+                            method: 'POST',
+                            headers: {
+                                Authorization: 'token ' + context.token,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                description: gistDescription,
+                                public: false,
+                                files: {
+                                    [fileName]: {
+                                        content: message
+                                    }
+                                }
+                            })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) {
+                            const errorMessage = data?.message || response.statusText;
+                            throw new Error(`GitHub gist creation failed. ${errorMessage}`);
+                        }
+                        return data?.html_url ? `GitHub gist created: ${data.html_url}` : 'GitHub gist created.';
+                    }
+                },
+                twitter: {
+                    name: 'Twitter (X)',
+                    getContext: () => {
+                        const token = getStoredValue('tw_access_token');
+                        const detail = token ? 'Access token detected.' : 'No stored Twitter access token. Refresh it on the Credentials tab.';
+                        return { ready: Boolean(token), detail, token };
+                    },
+                    validateMessage: (message) => {
+                        if (message.length > 280) {
+                            throw new Error('Twitter posts are limited to 280 characters.');
+                        }
+                    },
+                    post: async ({ message, context }) => {
+                        const response = await fetch('https://api.twitter.com/2/tweets', {
+                            method: 'POST',
+                            headers: {
+                                Authorization: 'Bearer ' + context.token,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ text: message })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) {
+                            const errorMessage = data?.errors?.map((error) => error.detail).join(', ') || response.statusText;
+                            throw new Error(`Twitter post failed. ${errorMessage}`);
+                        }
+                        return data?.data?.id ? `Tweet published (ID: ${data.data.id}).` : 'Tweet published.';
+                    }
+                },
+                openai: {
+                    name: 'OpenAI',
+                    getContext: () => {
+                        const apiKey = getStoredValue('oai_api_key');
+                        const detail = apiKey ? 'API key detected.' : 'No stored OpenAI API key. Save one on the Credentials tab.';
+                        return { ready: Boolean(apiKey), detail, apiKey };
+                    },
+                    post: async ({ message, context }) => {
+                        const config = readConfig('openai');
+                        const payload = {
+                            model: config.model || 'gpt-3.5-turbo',
+                            messages: [
+                                ...(config.system ? [{ role: 'system', content: config.system }] : []),
+                                { role: 'user', content: message }
+                            ]
+                        };
+                        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                            method: 'POST',
+                            headers: {
+                                Authorization: 'Bearer ' + context.apiKey,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await response.json();
+                        if (!response.ok) {
+                            const errorMessage = data?.error?.message || response.statusText;
+                            throw new Error(`OpenAI request failed. ${errorMessage}`);
+                        }
+                        const reply = data?.choices?.[0]?.message?.content?.trim();
+                        return reply ? `OpenAI replied: ${reply}` : 'OpenAI chat completion succeeded.';
+                    }
+                }
+            };
+
+            const updateStatus = () => {
+                Object.entries(platforms).forEach(([key, config]) => {
+                    const context = config.getContext();
+                    const chip = statusChips.get(key);
+                    if (chip) {
+                        chip.textContent = `${context.ready ? 'Ready' : 'Not ready'} • ${context.detail}`;
+                        chip.classList.toggle('status-chip--ready', context.ready);
+                        chip.classList.toggle('status-chip--missing', !context.ready);
+                    }
+                    const card = platformCards.get(key);
+                    if (card) {
+                        card.classList.toggle('platform-card--disabled', !context.ready);
+                    }
+                    const postButton = platformButtons.get(key);
+                    if (postButton) {
+                        postButton.disabled = !context.ready;
+                    }
+                    const checkbox = platformCheckboxes.find((cb) => cb.value === key);
+                    const label = targetLabels.get(key);
+                    if (checkbox) {
+                        if (!context.ready) {
+                            checkbox.checked = false;
+                            checkbox.disabled = true;
+                            if (label) {
+                                label.classList.add('is-disabled');
+                            }
+                        } else {
+                            checkbox.disabled = false;
+                            if (label) {
+                                label.classList.remove('is-disabled');
+                            }
+                        }
+                    }
+                });
+                updateSelectedCount();
+            };
+
+            const executeAction = async (button, action) => {
+                if (button) {
+                    button.disabled = true;
+                    button.classList.add('is-busy');
+                }
+
+                try {
+                    await action();
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : String(error);
+                    log(message, 'error');
+                } finally {
+                    if (button) {
+                        button.disabled = false;
+                        button.classList.remove('is-busy');
+                    }
+                }
+            };
+
+            const sendToPlatform = async (platform) => {
+                const config = platforms[platform];
+                if (!config) {
+                    throw new Error(`Unknown platform: ${platform}`);
+                }
+                const message = getMessageFor(platform);
+                if (!message) {
+                    throw new Error(`Add a message for ${config.name} before posting.`);
+                }
+                const context = config.getContext();
+                if (!context.ready) {
+                    throw new Error(`${config.name} is not ready. ${context.detail}`);
+                }
+                if (typeof config.validateMessage === 'function') {
+                    config.validateMessage(message, context);
+                }
+                log(`Posting to ${config.name}…`, 'info');
+                const summary = await config.post({ message, context });
+                log(summary || `${config.name} post complete.`, 'success');
+            };
+
+            const actions = {
+                postSelected: async () => {
+                    const selected = getSelectedPlatforms();
+                    if (!selected.length) {
+                        throw new Error('Select at least one platform before posting.');
+                    }
+                    for (const platform of selected) {
+                        const button = platformButtons.get(platform);
+                        await executeAction(button, () => sendToPlatform(platform));
+                    }
+                },
+                refreshStatus: async () => {
+                    updateStatus();
+                    log('Connection status refreshed.', 'info');
+                },
+                clearConsole: async () => {
+                    if (consoleEl) {
+                        consoleEl.innerHTML = '';
+                    }
+                    log('Console cleared.', 'info');
+                },
+                resetMessages: async () => {
+                    if (broadcastEl) {
+                        broadcastEl.value = '';
+                        setStoredValue('broadcast_message', '');
+                        updateBroadcastCharCount();
+                    }
+                    overrideMap.forEach((textarea, platform) => {
+                        textarea.value = '';
+                        setStoredValue('message:' + platform, '');
+                    });
+                    log('Broadcast and override messages cleared.', 'info');
+                }
+            };
+
+            document.querySelectorAll('[data-action]').forEach((button) => {
+                const actionName = button.dataset.action;
+                const action = actions[actionName];
+                if (!action) {
+                    return;
+                }
+                button.addEventListener('click', () => {
+                    executeAction(button, action);
+                });
+            });
+
+            document.querySelectorAll('[data-post-platform]').forEach((button) => {
+                const platform = button.dataset.postPlatform;
+                button.addEventListener('click', () => {
+                    executeAction(button, () => sendToPlatform(platform));
+                });
+            });
+
+            document.querySelectorAll('[data-copy-broadcast]').forEach((button) => {
+                const platform = button.dataset.copyBroadcast;
+                button.addEventListener('click', () => {
+                    const target = overrideMap.get(platform);
+                    if (!target) {
+                        return;
+                    }
+                    if (!broadcastEl) {
+                        log('Add a broadcast message first.', 'error');
+                        return;
+                    }
+                    target.value = broadcastEl.value;
+                    target.dispatchEvent(new Event('input', { bubbles: true }));
+                    target.focus({ preventScroll: false });
+                    const platformName = platforms[platform]?.name || platform;
+                    log(`Broadcast message copied to ${platformName}.`, 'info');
+                });
+            });
+
+            if (storageAvailable) {
+                window.addEventListener('storage', (event) => {
+                    if (!event.key || !event.key.startsWith(storagePrefix)) {
+                        return;
+                    }
+                    const suffix = event.key.slice(storagePrefix.length);
+                    if (suffix === 'broadcast_message' && broadcastEl) {
+                        broadcastEl.value = event.newValue ?? '';
+                        updateBroadcastCharCount();
+                    } else if (suffix.startsWith('message:')) {
+                        const platform = suffix.split(':')[1];
+                        const textarea = overrideMap.get(platform);
+                        if (textarea) {
+                            textarea.value = event.newValue ?? '';
+                        }
+                    } else if (suffix.startsWith('config:')) {
+                        const parts = suffix.split(':');
+                        if (parts.length === 3) {
+                            const platform = parts[1];
+                            const key = parts[2];
+                            const input = (configInputs[platform] || {})[key];
+                            if (input) {
+                                input.value = event.newValue ?? '';
+                            }
+                        }
+                    }
+                    updateStatus();
+                });
+            }
+
+            updateStatus();
+        })();
+    </script>
+</body>
+</html>

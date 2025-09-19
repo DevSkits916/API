@@ -16,6 +16,7 @@ This tool is for **local testing and education**. It is **not** a secure product
 1. Clone the repo
 2. Open `index.html` in your browser
 3. Paste temporary tokens (or test keys) and run the verify/test actions
+4. Open `composer.html` to craft posts once everything looks good
 
 No build step required.
 
@@ -31,6 +32,7 @@ No build step required.
   - Twitter (X): verify `users/me` and post a tweet (token-only)
   - OpenAI: list models and run a minimal chat completion
 - Download credentials snapshot as CSV (for demos only; see Security)
+- Dedicated **Post Composer** page that reuses your stored tokens to publish across platforms
 
 ---
 
@@ -45,6 +47,7 @@ No build step required.
 - Do **not** use real app client secrets here. OAuth client secrets belong on a server, not in a browser.
 - Token exchange and refresh flows should be performed on a **backend** you control, using environment variables.
 - The CSV export includes sensitive values. Treat it like a live grenade.
+- Credentials and overrides are cached in `localStorage` so the composer can reuse them. Clear your browser storage when you're finished.
 
 If you need to use real credentials, build the backend described in the TODO section and configure HTTPS, CSP, and strict CORS.
 
