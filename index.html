@@ -4,350 +4,993 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Key Manager</title>
+    <meta name="description" content="Modern dashboard for collecting, verifying, and exporting API credentials for Facebook, GitHub, Twitter (X), and OpenAI.">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .platform { margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; display: flex; align-items: flex-start; }
-        .platform img { width: 50px; height: auto; margin-right: 20px; }
-        .platform-content { flex: 1; }
-        .platform h2 { margin-top: 0; }
-        input { display: block; margin-bottom: 10px; width: 100%; }
-        button { margin-right: 10px; }
-        #console { height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background: #f8f8f8; }
-        .links { margin-top: 20px; }
+        :root {
+            --bg: #f6f8fb;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --muted: #52606d;
+            --border: #e2e8f0;
+            --accent: #6366f1;
+            --accent-strong: #4f46e5;
+            --success: #22c55e;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --console-bg: #0f172a;
+            --console-border: #1e293b;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-card: 0 25px 50px -20px rgba(15, 23, 42, 0.25);
+            --shadow-button: 0 18px 35px -18px rgba(79, 70, 229, 0.65);
+            --shadow-button-hover: 0 24px 45px -20px rgba(79, 70, 229, 0.7);
+            --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-sans);
+            color: var(--text);
+            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0) 55%), var(--bg);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        a {
+            color: var(--accent-strong);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .page-header {
+            padding: 3rem 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(14, 165, 233, 0.12));
+        }
+
+        .page-header__content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .page-header__title {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            margin-bottom: 0.75rem;
+        }
+
+        .page-header__subtitle {
+            margin: 0 auto;
+            max-width: 620px;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .page-layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.25rem 1.5rem 3rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .page-layout {
+                grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr);
+                align-items: start;
+            }
+        }
+
+        .platform-grid {
+            display: grid;
+            gap: 1.75rem;
+        }
+
+        @media (min-width: 768px) {
+            .platform-grid {
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            }
+        }
+
+        .platform-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .platform-card__header {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .platform-card__logo {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-md);
+            background: rgba(238, 242, 255, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .platform-card__logo img {
+            max-width: 36px;
+            max-height: 36px;
+        }
+
+        .platform-card__summary {
+            margin: 0.35rem 0 0;
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .platform-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .input-label {
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 0.65rem 0.85rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.92);
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .input-control:focus-visible {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+
+        .input-control[readonly] {
+            background: rgba(248, 250, 252, 0.9);
+            color: var(--muted);
+        }
+
+        .input-with-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .input-with-toggle .input-control {
+            flex: 1;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+            padding: 0.6rem 1.05rem;
+        }
+
+        .button--primary {
+            background: linear-gradient(135deg, #6366f1, #4338ca);
+            color: #ffffff;
+            box-shadow: var(--shadow-button);
+        }
+
+        .button--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-button-hover);
+        }
+
+        .button--primary:focus-visible {
+            outline: 3px solid rgba(99, 102, 241, 0.3);
+            outline-offset: 2px;
+        }
+
+        .button--secondary {
+            background: rgba(15, 23, 42, 0.06);
+            color: var(--text);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .button--secondary:hover {
+            background: rgba(15, 23, 42, 0.12);
+        }
+
+        .button--tertiary {
+            background: rgba(99, 102, 241, 0.14);
+            color: var(--accent-strong);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.72rem;
+            padding: 0.45rem 0.75rem;
+        }
+
+        .button--tertiary:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+        }
+
+        .button.is-busy::after {
+            content: '';
+            width: 0.9rem;
+            height: 0.9rem;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.35rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .actions-panel,
+        .console-panel,
+        .resources {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+        }
+
+        .actions-panel__buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .actions-panel__hint {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .console-panel__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .console-log {
+            height: 360px;
+            overflow-y: auto;
+            background: var(--console-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--console-border);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            font-family: var(--font-mono);
+            color: #e2e8f0;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            border-left: 3px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 0.55rem 0.7rem;
+            background: rgba(148, 163, 184, 0.12);
+            font-size: 0.86rem;
+        }
+
+        .log-entry__time {
+            color: rgba(226, 232, 240, 0.65);
+            font-variant-numeric: tabular-nums;
+            min-width: 72px;
+        }
+
+        .log-entry__message {
+            flex: 1;
+        }
+
+        .log-entry--success {
+            border-left-color: rgba(34, 197, 94, 0.9);
+            background: rgba(34, 197, 94, 0.14);
+            color: #bbf7d0;
+        }
+
+        .log-entry--error {
+            border-left-color: rgba(248, 113, 113, 0.95);
+            background: rgba(248, 113, 113, 0.16);
+            color: #fecaca;
+        }
+
+        .log-entry--info {
+            border-left-color: rgba(59, 130, 246, 0.85);
+            background: rgba(59, 130, 246, 0.16);
+            color: #bfdbfe;
+        }
+
+        .resources h2 {
+            margin-bottom: 1rem;
+        }
+
+        .resource-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 0.7rem;
+        }
+
+        .resource-list a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .resource-list a::after {
+            content: '↗';
+            font-size: 0.8rem;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .platform-card__header {
+                align-items: flex-start;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>API Key Manager</h1>
-    
-    <div id="facebook" class="platform">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook Logo">
-        <div class="platform-content">
-            <h2>Facebook</h2>
-            <label>App ID: <input type="text" id="fb_app_id"></label>
-            <label>App Secret: <input type="text" id="fb_app_secret"></label>
-            <label>Short-lived User Access Token: <input type="text" id="fb_short_token"></label>
-            <label>Long-lived User Access Token: <input type="text" id="fb_long_token" readonly></label>
-            <button onclick="verifyFacebook()">Verify</button>
-            <button onclick="exchangeFacebookToken()">Exchange for Long-term Token</button>
-            <button onclick="testPostFacebook()">Test Post</button>
+    <header class="page-header">
+        <div class="page-header__content">
+            <h1 class="page-header__title">API Key Manager</h1>
+            <p class="page-header__subtitle">Collect credentials, validate access, and run quick smoke tests for Facebook, GitHub, Twitter (X), and OpenAI APIs without leaving your browser.</p>
         </div>
-    </div>
-    
-    <div id="github" class="platform">
-        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo">
-        <div class="platform-content">
-            <h2>GitHub</h2>
-            <label>Client ID (for OAuth App): <input type="text" id="gh_client_id"></label>
-            <label>Client Secret (for OAuth App): <input type="text" id="gh_client_secret"></label>
-            <label>Personal Access Token: <input type="text" id="gh_pat"></label>
-            <label>Access Token (from OAuth): <input type="text" id="gh_access_token"></label>
-            <button onclick="verifyGitHub()">Verify</button>
-            <button onclick="testPostGitHub()">Test Post (Create Gist)</button>
-        </div>
-    </div>
-    
-    <div id="twitter" class="platform">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg" alt="Twitter Logo">
-        <div class="platform-content">
-            <h2>Twitter (X)</h2>
-            <label>Client ID: <input type="text" id="tw_client_id"></label>
-            <label>Client Secret: <input type="text" id="tw_client_secret"></label>
-            <label>Access Token: <input type="text" id="tw_access_token"></label>
-            <label>Refresh Token: <input type="text" id="tw_refresh_token"></label>
-            <button onclick="verifyTwitter()">Verify</button>
-            <button onclick="refreshTwitterToken()">Refresh Token</button>
-            <button onclick="testPostTwitter()">Test Post</button>
-        </div>
-    </div>
-    
-    <div id="openai" class="platform">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/OpenAI_Logo.svg" alt="OpenAI Logo">
-        <div class="platform-content">
-            <h2>OpenAI</h2>
-            <label>API Key: <input type="text" id="oai_api_key"></label>
-            <button onclick="verifyOpenAI()">Verify</button>
-            <button onclick="testPostOpenAI()">Test Request</button>
-        </div>
-    </div>
-    
-    <button onclick="saveToCSV()">Save All to CSV</button>
-    
-    <h3>Console</h3>
-    <div id="console"></div>
-    
-    <div class="links">
-        <h3>API Explorers</h3>
-        <ul>
-            <li><a href="https://developers.facebook.com/tools/explorer/" target="_blank">Facebook Graph API Explorer</a></li>
-            <li><a href="https://docs.github.com/en/rest" target="_blank">GitHub REST API Docs</a></li>
-            <li><a href="https://developer.twitter.com/en/docs/twitter-api/tools-and-libraries/api-reference" target="_blank">Twitter (X) API Reference</a></li>
-            <li><a href="https://platform.openai.com/docs/api-reference" target="_blank">OpenAI API Reference</a></li>
-        </ul>
-    </div>
+    </header>
+
+    <main class="page-layout">
+        <section aria-label="Connected platforms">
+            <div class="platform-grid">
+                <article class="platform-card" id="facebook">
+                    <header class="platform-card__header">
+                        <div class="platform-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook logo">
+                        </div>
+                        <div>
+                            <h2 class="platform-card__title">Facebook</h2>
+                            <p class="platform-card__summary">Exchange tokens and validate Graph API access for your Meta apps.</p>
+                        </div>
+                    </header>
+                    <form class="platform-form" autocomplete="off" novalidate>
+                        <div class="form-row">
+                            <label class="input-label" for="fb_app_id">App ID</label>
+                            <input class="input-control" type="text" id="fb_app_id" placeholder="Enter your Facebook App ID" autocomplete="off">
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="fb_app_secret">App Secret</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="fb_app_secret" placeholder="Enter your Facebook App Secret" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="fb_app_secret" aria-controls="fb_app_secret">Show</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="fb_short_token">Short-lived User Access Token</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="fb_short_token" placeholder="Paste your short-lived token" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="fb_short_token" aria-controls="fb_short_token">Show</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="fb_long_token">Long-lived User Access Token</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="fb_long_token" placeholder="Exchange to populate" autocomplete="off" data-sensitive readonly>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="fb_long_token" aria-controls="fb_long_token">Show</button>
+                            </div>
+                        </div>
+                        <div class="action-row">
+                            <button type="button" class="button button--primary" data-action="verifyFacebook">Verify</button>
+                            <button type="button" class="button button--primary" data-action="exchangeFacebookToken">Exchange for Long-term Token</button>
+                            <button type="button" class="button button--primary" data-action="testPostFacebook">Test Post</button>
+                        </div>
+                    </form>
+                </article>
+
+                <article class="platform-card" id="github">
+                    <header class="platform-card__header">
+                        <div class="platform-card__logo">
+                            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub logo">
+                        </div>
+                        <div>
+                            <h2 class="platform-card__title">GitHub</h2>
+                            <p class="platform-card__summary">Confirm PATs or OAuth tokens and spin up quick Gist test posts.</p>
+                        </div>
+                    </header>
+                    <form class="platform-form" autocomplete="off" novalidate>
+                        <div class="form-row">
+                            <label class="input-label" for="gh_client_id">Client ID (OAuth App)</label>
+                            <input class="input-control" type="text" id="gh_client_id" placeholder="Enter your GitHub OAuth client ID" autocomplete="off">
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="gh_client_secret">Client Secret (OAuth App)</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="gh_client_secret" placeholder="Enter your GitHub client secret" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="gh_client_secret" aria-controls="gh_client_secret">Show</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="gh_pat">Personal Access Token</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="gh_pat" placeholder="Paste your PAT" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="gh_pat" aria-controls="gh_pat">Show</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="gh_access_token">Access Token (OAuth)</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="gh_access_token" placeholder="Paste the OAuth access token" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="gh_access_token" aria-controls="gh_access_token">Show</button>
+                            </div>
+                        </div>
+                        <div class="action-row">
+                            <button type="button" class="button button--primary" data-action="verifyGitHub">Verify</button>
+                            <button type="button" class="button button--primary" data-action="testPostGitHub">Test Post (Create Gist)</button>
+                        </div>
+                    </form>
+                </article>
+
+                <article class="platform-card" id="twitter">
+                    <header class="platform-card__header">
+                        <div class="platform-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg" alt="Twitter (X) logo">
+                        </div>
+                        <div>
+                            <h2 class="platform-card__title">Twitter (X)</h2>
+                            <p class="platform-card__summary">Refresh OAuth tokens and validate posting permissions on X.</p>
+                        </div>
+                    </header>
+                    <form class="platform-form" autocomplete="off" novalidate>
+                        <div class="form-row">
+                            <label class="input-label" for="tw_client_id">Client ID</label>
+                            <input class="input-control" type="text" id="tw_client_id" placeholder="Enter your X client ID" autocomplete="off">
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="tw_client_secret">Client Secret</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="tw_client_secret" placeholder="Enter your X client secret" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="tw_client_secret" aria-controls="tw_client_secret">Show</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="tw_access_token">Access Token</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="tw_access_token" placeholder="Paste the current access token" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="tw_access_token" aria-controls="tw_access_token">Show</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="tw_refresh_token">Refresh Token</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="tw_refresh_token" placeholder="Paste the refresh token" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="tw_refresh_token" aria-controls="tw_refresh_token">Show</button>
+                            </div>
+                        </div>
+                        <div class="action-row">
+                            <button type="button" class="button button--primary" data-action="verifyTwitter">Verify</button>
+                            <button type="button" class="button button--primary" data-action="refreshTwitterToken">Refresh Token</button>
+                            <button type="button" class="button button--primary" data-action="testPostTwitter">Test Post</button>
+                        </div>
+                    </form>
+                </article>
+
+                <article class="platform-card" id="openai">
+                    <header class="platform-card__header">
+                        <div class="platform-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/OpenAI_Logo.svg" alt="OpenAI logo">
+                        </div>
+                        <div>
+                            <h2 class="platform-card__title">OpenAI</h2>
+                            <p class="platform-card__summary">Check API key validity and send a quick chat completion request.</p>
+                        </div>
+                    </header>
+                    <form class="platform-form" autocomplete="off" novalidate>
+                        <div class="form-row">
+                            <label class="input-label" for="oai_api_key">API Key</label>
+                            <div class="input-with-toggle">
+                                <input class="input-control" type="password" id="oai_api_key" placeholder="Enter your OpenAI API key" autocomplete="off" data-sensitive>
+                                <button type="button" class="button button--tertiary toggle-visibility" data-toggle="oai_api_key" aria-controls="oai_api_key">Show</button>
+                            </div>
+                        </div>
+                        <div class="action-row">
+                            <button type="button" class="button button--primary" data-action="verifyOpenAI">Verify</button>
+                            <button type="button" class="button button--primary" data-action="testPostOpenAI">Test Request</button>
+                        </div>
+                    </form>
+                </article>
+            </div>
+        </section>
+
+        <aside class="sidebar">
+            <section class="actions-panel" aria-label="Utility actions">
+                <h2>Utilities</h2>
+                <div class="actions-panel__buttons">
+                    <button type="button" class="button button--secondary" data-action="saveToCSV">Save All to CSV</button>
+                    <button type="button" class="button button--secondary" data-action="clearConsole">Clear Console</button>
+                </div>
+                <p class="actions-panel__hint">Everything stays in the browser until you export it. Keep the CSV secure.</p>
+            </section>
+
+            <section class="console-panel" aria-labelledby="console-title">
+                <div class="console-panel__header">
+                    <h2 id="console-title">Console</h2>
+                </div>
+                <div id="console" class="console-log" role="log" aria-live="polite" aria-atomic="false"></div>
+            </section>
+
+            <section class="resources" aria-labelledby="resource-links-title">
+                <h2 id="resource-links-title">API Explorers</h2>
+                <ul class="resource-list">
+                    <li><a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer">Facebook Graph API Explorer</a></li>
+                    <li><a href="https://docs.github.com/en/rest" target="_blank" rel="noopener noreferrer">GitHub REST API Docs</a></li>
+                    <li><a href="https://developer.twitter.com/en/docs/twitter-api/tools-and-libraries/api-reference" target="_blank" rel="noopener noreferrer">Twitter (X) API Reference</a></li>
+                    <li><a href="https://platform.openai.com/docs/api-reference" target="_blank" rel="noopener noreferrer">OpenAI API Reference</a></li>
+                </ul>
+            </section>
+        </aside>
+    </main>
 
     <script>
-        function log(message, isError = false) {
-            const consoleDiv = document.getElementById('console');
-            const entry = document.createElement('div');
-            entry.textContent = new Date().toLocaleTimeString() + ': ' + message;
-            if (isError) entry.style.color = 'red';
-            consoleDiv.appendChild(entry);
-            consoleDiv.scrollTop = consoleDiv.scrollHeight;
-        }
+        (() => {
+            const consoleEl = document.getElementById('console');
 
-        async function verifyFacebook() {
-            const appId = document.getElementById('fb_app_id').value;
-            const token = document.getElementById('fb_long_token').value || document.getElementById('fb_short_token').value;
-            if (!appId || !token) {
-                log('Missing App ID or Token for Facebook', true);
-                return;
-            }
-            try {
-                const meResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${token}`);
-                if (!meResponse.ok) throw new Error('Failed to fetch /me: ' + (await meResponse.text()));
-                log('Facebook read access verified (fetched /me successfully)');
-                log('Facebook verification successful (read access confirmed; write assumes permissions)');
-            } catch (error) {
-                log('Facebook verification failed: ' + error.message, true);
-            }
-        }
+            const getValue = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value.trim() : '';
+            };
 
-        async function exchangeFacebookToken() {
-            const appId = document.getElementById('fb_app_id').value;
-            const appSecret = document.getElementById('fb_app_secret').value;
-            const shortToken = document.getElementById('fb_short_token').value;
-            if (!appId || !appSecret || !shortToken) {
-                log('Missing fields for Facebook token exchange', true);
-                return;
-            }
-            try {
-                const response = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-                document.getElementById('fb_long_token').value = data.access_token;
-                log('Facebook long-term token obtained successfully');
-            } catch (error) {
-                log('Facebook token exchange failed: ' + error.message, true);
-            }
-        }
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = value ?? '';
+                }
+            };
 
-        async function testPostFacebook() {
-            const token = document.getElementById('fb_long_token').value || document.getElementById('fb_short_token').value;
-            if (!token) {
-                log('Missing Token for Facebook test post', true);
-                return;
-            }
-            try {
-                const response = await fetch(`https://graph.facebook.com/v20.0/me/feed?access_token=${token}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: 'Test post from API Key Manager' })
+            const log = (message, type = 'info') => {
+                if (!consoleEl) return;
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-entry--${type}`;
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'log-entry__time';
+                timeSpan.textContent = new Date().toLocaleTimeString();
+
+                const messageSpan = document.createElement('span');
+                messageSpan.className = 'log-entry__message';
+                messageSpan.textContent = message;
+
+                entry.append(timeSpan, messageSpan);
+                consoleEl.appendChild(entry);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            };
+
+            const handleAction = async (button, action) => {
+                if (typeof action !== 'function') {
+                    return;
+                }
+
+                button.disabled = true;
+                button.classList.add('is-busy');
+
+                try {
+                    await action();
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : String(error);
+                    log(message, 'error');
+                } finally {
+                    button.disabled = false;
+                    button.classList.remove('is-busy');
+                }
+            };
+
+            const requireFields = (fields, platform) => {
+                const missing = fields.filter(({ id }) => !getValue(id));
+                if (missing.length) {
+                    const labels = missing.map((field) => field.label).join(', ');
+                    throw new Error(`${platform} requires: ${labels}.`);
+                }
+            };
+
+            const buildCSV = () => {
+                const structure = {
+                    Facebook: [
+                        { label: 'App ID', id: 'fb_app_id' },
+                        { label: 'App Secret', id: 'fb_app_secret' },
+                        { label: 'Short-lived Token', id: 'fb_short_token' },
+                        { label: 'Long-lived Token', id: 'fb_long_token' }
+                    ],
+                    GitHub: [
+                        { label: 'Client ID', id: 'gh_client_id' },
+                        { label: 'Client Secret', id: 'gh_client_secret' },
+                        { label: 'Personal Access Token', id: 'gh_pat' },
+                        { label: 'Access Token', id: 'gh_access_token' }
+                    ],
+                    Twitter: [
+                        { label: 'Client ID', id: 'tw_client_id' },
+                        { label: 'Client Secret', id: 'tw_client_secret' },
+                        { label: 'Access Token', id: 'tw_access_token' },
+                        { label: 'Refresh Token', id: 'tw_refresh_token' }
+                    ],
+                    OpenAI: [
+                        { label: 'API Key', id: 'oai_api_key' }
+                    ]
+                };
+
+                const rows = [['Platform', 'Field', 'Value']];
+
+                Object.entries(structure).forEach(([platform, fields]) => {
+                    fields.forEach(({ label, id }) => {
+                        const value = getValue(id).replace(/"/g, '""');
+                        rows.push([platform, label, value]);
+                    });
                 });
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-                log('Facebook test post successful: Post ID ' + data.id);
-            } catch (error) {
-                log('Facebook test post failed: ' + error.message, true);
-            }
-        }
 
-        async function verifyGitHub() {
-            const pat = document.getElementById('gh_pat').value;
-            const accessToken = document.getElementById('gh_access_token').value;
-            const token = pat || accessToken;
-            if (!token) {
-                log('Missing token for GitHub', true);
-                return;
-            }
-            try {
-                const response = await fetch('https://api.github.com/user', {
-                    headers: { 'Authorization': `token ${token}` }
+                return rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+            };
+
+            const exportToCSV = () => {
+                const csvContent = buildCSV();
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'api_keys.csv';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(url);
+            };
+
+            const actions = {
+                verifyFacebook: async () => {
+                    const appId = getValue('fb_app_id');
+                    const token = getValue('fb_long_token') || getValue('fb_short_token');
+                    if (!appId || !token) {
+                        throw new Error('Facebook verification requires both an App ID and an access token.');
+                    }
+
+                    log('Validating Facebook credentials…', 'info');
+                    const response = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${encodeURIComponent(token)}`);
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Facebook verification failed. ${errorText || response.statusText}`);
+                    }
+
+                    log('Facebook read access verified via /me endpoint.', 'success');
+                },
+                exchangeFacebookToken: async () => {
+                    requireFields([
+                        { id: 'fb_app_id', label: 'App ID' },
+                        { id: 'fb_app_secret', label: 'App Secret' },
+                        { id: 'fb_short_token', label: 'Short-lived Token' }
+                    ], 'Facebook');
+
+                    log('Requesting Facebook long-lived token…', 'info');
+                    const params = new URLSearchParams({
+                        grant_type: 'fb_exchange_token',
+                        client_id: getValue('fb_app_id'),
+                        client_secret: getValue('fb_app_secret'),
+                        fb_exchange_token: getValue('fb_short_token')
+                    });
+
+                    const response = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?${params.toString()}`);
+                    const data = await response.json();
+
+                    if (!response.ok || data.error) {
+                        const message = data?.error?.message || response.statusText;
+                        throw new Error(`Facebook token exchange failed. ${message}`);
+                    }
+
+                    setValue('fb_long_token', data.access_token ?? '');
+                    log('Facebook long-lived token obtained successfully.', 'success');
+                },
+                testPostFacebook: async () => {
+                    const token = getValue('fb_long_token') || getValue('fb_short_token');
+                    if (!token) {
+                        throw new Error('Provide a Facebook user token before posting.');
+                    }
+
+                    log('Submitting Facebook feed test post…', 'info');
+                    const response = await fetch(`https://graph.facebook.com/v20.0/me/feed?access_token=${encodeURIComponent(token)}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: 'Test post from API Key Manager' })
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || data.error) {
+                        const message = data?.error?.message || response.statusText;
+                        throw new Error(`Facebook test post failed. ${message}`);
+                    }
+
+                    log(`Facebook test post succeeded. Post ID: ${data.id}`, 'success');
+                },
+                verifyGitHub: async () => {
+                    const token = getValue('gh_pat') || getValue('gh_access_token');
+                    if (!token) {
+                        throw new Error('Provide a GitHub personal access token or OAuth token.');
+                    }
+
+                    log('Validating GitHub token via /user…', 'info');
+                    const response = await fetch('https://api.github.com/user', {
+                        headers: { Authorization: `token ${token}` }
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`GitHub verification failed. ${errorText || response.statusText}`);
+                    }
+
+                    log('GitHub authentication verified. User endpoint responded successfully.', 'success');
+                },
+                testPostGitHub: async () => {
+                    const token = getValue('gh_pat') || getValue('gh_access_token');
+                    if (!token) {
+                        throw new Error('Provide a GitHub token before creating a gist.');
+                    }
+
+                    log('Creating private GitHub gist for verification…', 'info');
+                    const response = await fetch('https://api.github.com/gists', {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `token ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            description: 'Test gist from API Key Manager',
+                            public: false,
+                            files: {
+                                'test.txt': {
+                                    content: 'Test content'
+                                }
+                            }
+                        })
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        const message = data?.message || response.statusText;
+                        throw new Error(`GitHub test gist failed. ${message}`);
+                    }
+
+                    log(`GitHub test gist created: ${data.html_url}`, 'success');
+                },
+                verifyTwitter: async () => {
+                    const accessToken = getValue('tw_access_token');
+                    if (!accessToken) {
+                        throw new Error('Provide a Twitter access token before verification.');
+                    }
+
+                    log('Validating Twitter (X) access token via /users/me…', 'info');
+                    const response = await fetch('https://api.twitter.com/2/users/me', {
+                        headers: { Authorization: `Bearer ${accessToken}` }
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Twitter verification failed. ${errorText || response.statusText}`);
+                    }
+
+                    log('Twitter access token verified via /users/me endpoint.', 'success');
+                },
+                refreshTwitterToken: async () => {
+                    requireFields([
+                        { id: 'tw_client_id', label: 'Client ID' },
+                        { id: 'tw_client_secret', label: 'Client Secret' },
+                        { id: 'tw_refresh_token', label: 'Refresh Token' }
+                    ], 'Twitter');
+
+                    log('Refreshing Twitter OAuth token…', 'info');
+                    const clientId = getValue('tw_client_id');
+                    const clientSecret = getValue('tw_client_secret');
+                    const refreshToken = getValue('tw_refresh_token');
+                    const auth = btoa(`${clientId}:${clientSecret}`);
+                    const body = new URLSearchParams({
+                        grant_type: 'refresh_token',
+                        refresh_token: refreshToken
+                    }).toString();
+
+                    const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Basic ${auth}`,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || data.error) {
+                        const message = data?.error_description || data?.error || response.statusText;
+                        throw new Error(`Twitter token refresh failed. ${message}`);
+                    }
+
+                    setValue('tw_access_token', data.access_token ?? '');
+                    setValue('tw_refresh_token', data.refresh_token ?? refreshToken);
+                    log('Twitter token refreshed. New access token stored.', 'success');
+                },
+                testPostTwitter: async () => {
+                    const accessToken = getValue('tw_access_token');
+                    if (!accessToken) {
+                        throw new Error('Provide a Twitter access token before posting.');
+                    }
+
+                    log('Publishing Twitter (X) test tweet…', 'info');
+                    const response = await fetch('https://api.twitter.com/2/tweets', {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text: 'Test post from API Key Manager' })
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        const message = data?.errors?.map((err) => err.detail).join(', ') || response.statusText;
+                        throw new Error(`Twitter test post failed. ${message}`);
+                    }
+
+                    const tweetId = data?.data?.id || 'unknown';
+                    log(`Twitter test post succeeded. Tweet ID: ${tweetId}`, 'success');
+                },
+                verifyOpenAI: async () => {
+                    const apiKey = getValue('oai_api_key');
+                    if (!apiKey) {
+                        throw new Error('Provide an OpenAI API key before verification.');
+                    }
+
+                    log('Fetching OpenAI models to validate API key…', 'info');
+                    const response = await fetch('https://api.openai.com/v1/models', {
+                        headers: { Authorization: `Bearer ${apiKey}` }
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`OpenAI verification failed. ${errorText || response.statusText}`);
+                    }
+
+                    log('OpenAI API key verified. Models endpoint responded successfully.', 'success');
+                },
+                testPostOpenAI: async () => {
+                    const apiKey = getValue('oai_api_key');
+                    if (!apiKey) {
+                        throw new Error('Provide an OpenAI API key before sending a test request.');
+                    }
+
+                    log('Sending chat completion test request to OpenAI…', 'info');
+                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: 'gpt-3.5-turbo',
+                            messages: [{ role: 'user', content: 'Say this is a test' }]
+                        })
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        const message = data?.error?.message || response.statusText;
+                        throw new Error(`OpenAI test request failed. ${message}`);
+                    }
+
+                    log('OpenAI chat completion request succeeded.', 'success');
+                },
+                saveToCSV: async () => {
+                    log('Exporting credentials to CSV…', 'info');
+                    exportToCSV();
+                    log('Credentials exported to api_keys.csv.', 'success');
+                },
+                clearConsole: async () => {
+                    if (consoleEl) {
+                        consoleEl.innerHTML = '';
+                    }
+                    log('Console cleared.', 'info');
+                }
+            };
+
+            document.querySelectorAll('.platform-form').forEach((form) => {
+                form.addEventListener('submit', (event) => event.preventDefault());
+            });
+
+            document.querySelectorAll('[data-action]').forEach((button) => {
+                const actionName = button.dataset.action;
+                const action = actions[actionName];
+                button.addEventListener('click', () => handleAction(button, action));
+            });
+
+            document.querySelectorAll('.toggle-visibility').forEach((button) => {
+                const targetId = button.getAttribute('data-toggle');
+                const input = document.getElementById(targetId);
+                if (!input) {
+                    return;
+                }
+
+                button.addEventListener('click', () => {
+                    const isHidden = input.type === 'password';
+                    input.type = isHidden ? 'text' : 'password';
+                    button.textContent = isHidden ? 'Hide' : 'Show';
+                    button.setAttribute('aria-pressed', String(isHidden));
+                    input.focus({ preventScroll: true });
                 });
-                if (!response.ok) throw new Error('Failed to fetch user: ' + (await response.text()));
-                log('GitHub read access verified (fetched user successfully)');
-                log('GitHub verification successful (read access confirmed; write assumes scopes)');
-            } catch (error) {
-                log('GitHub verification failed: ' + error.message, true);
-            }
-        }
-
-        async function testPostGitHub() {
-            const pat = document.getElementById('gh_pat').value;
-            const accessToken = document.getElementById('gh_access_token').value;
-            const token = pat || accessToken;
-            if (!token) {
-                log('Missing token for GitHub test post', true);
-                return;
-            }
-            try {
-                const response = await fetch('https://api.github.com/gists', {
-                    method: 'POST',
-                    headers: { 
-                        'Authorization': `token ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        description: 'Test gist from API Key Manager',
-                        public: false,
-                        files: { 'test.txt': { content: 'Test content' } }
-                    })
-                });
-                if (!response.ok) throw new Error('Failed to create gist: ' + (await response.text()));
-                const data = await response.json();
-                log('GitHub test post (gist) successful: Gist URL ' + data.html_url);
-            } catch (error) {
-                log('GitHub test post failed: ' + error.message, true);
-            }
-        }
-
-        async function verifyTwitter() {
-            const accessToken = document.getElementById('tw_access_token').value;
-            if (!accessToken) {
-                log('Missing access token for Twitter', true);
-                return;
-            }
-            try {
-                const response = await fetch('https://api.twitter.com/2/users/me', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                if (!response.ok) throw new Error('Failed to fetch /users/me: ' + (await response.text()));
-                log('Twitter read access verified (fetched /users/me successfully)');
-                log('Twitter verification successful (read access confirmed; write assumes permissions)');
-            } catch (error) {
-                log('Twitter verification failed: ' + error.message, true);
-            }
-        }
-
-        async function refreshTwitterToken() {
-            const clientId = document.getElementById('tw_client_id').value;
-            const clientSecret = document.getElementById('tw_client_secret').value;
-            const refreshToken = document.getElementById('tw_refresh_token').value;
-            if (!clientId || !clientSecret || !refreshToken) {
-                log('Missing fields for Twitter token refresh', true);
-                return;
-            }
-            try {
-                const auth = btoa(`${clientId}:${clientSecret}`);
-                const response = await fetch('https://api.twitter.com/2/oauth2/token', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Basic ${auth}`,
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: `grant_type=refresh_token&refresh_token=${refreshToken}`
-                });
-                const data = await response.json();
-                if (data.error) throw new Error(data.error + ': ' + data.error_description);
-                document.getElementById('tw_access_token').value = data.access_token;
-                document.getElementById('tw_refresh_token').value = data.refresh_token || refreshToken;
-                log('Twitter token refreshed successfully');
-            } catch (error) {
-                log('Twitter token refresh failed: ' + error.message, true);
-            }
-        }
-
-        async function testPostTwitter() {
-            const accessToken = document.getElementById('tw_access_token').value;
-            if (!accessToken) {
-                log('Missing access token for Twitter test post', true);
-                return;
-            }
-            try {
-                const response = await fetch('https://api.twitter.com/2/tweets', {
-                    method: 'POST',
-                    headers: { 
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ text: 'Test post from API Key Manager' })
-                });
-                if (!response.ok) throw new Error('Failed to post tweet: ' + (await response.text()));
-                const data = await response.json();
-                log('Twitter test post successful: Tweet ID ' + data.data.id);
-            } catch (error) {
-                log('Twitter test post failed: ' + error.message, true);
-            }
-        }
-
-        async function verifyOpenAI() {
-            const apiKey = document.getElementById('oai_api_key').value;
-            if (!apiKey) {
-                log('Missing API key for OpenAI', true);
-                return;
-            }
-            try {
-                const response = await fetch('https://api.openai.com/v1/models', {
-                    headers: { 'Authorization': `Bearer ${apiKey}` }
-                });
-                if (!response.ok) throw new Error('Failed to fetch models: ' + (await response.text()));
-                log('OpenAI read access verified (fetched models successfully)');
-                log('OpenAI verification successful (access confirmed)');
-            } catch (error) {
-                log('OpenAI verification failed: ' + error.message, true);
-            }
-        }
-
-        async function testPostOpenAI() {
-            const apiKey = document.getElementById('oai_api_key').value;
-            if (!apiKey) {
-                log('Missing API key for OpenAI test request', true);
-                return;
-            }
-            try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-3.5-turbo',
-                        messages: [{ role: 'user', content: 'Say this is a test' }]
-                    })
-                });
-                if (!response.ok) throw new Error('Failed to get completion: ' + (await response.text()));
-                log('OpenAI test request successful');
-            } catch (error) {
-                log('OpenAI test request failed: ' + error.message, true);
-            }
-        }
-
-        function saveToCSV() {
-            const data = [];
-            data.push(['Platform', 'Type', 'Value']);
-            
-            // Facebook
-            data.push(['Facebook', 'App ID', document.getElementById('fb_app_id').value]);
-            data.push(['Facebook', 'App Secret', document.getElementById('fb_app_secret').value]);
-            data.push(['Facebook', 'Short-lived Token', document.getElementById('fb_short_token').value]);
-            data.push(['Facebook', 'Long-lived Token', document.getElementById('fb_long_token').value]);
-            
-            // GitHub
-            data.push(['GitHub', 'Client ID', document.getElementById('gh_client_id').value]);
-            data.push(['GitHub', 'Client Secret', document.getElementById('gh_client_secret').value]);
-            data.push(['GitHub', 'Personal Access Token', document.getElementById('gh_pat').value]);
-            data.push(['GitHub', 'Access Token', document.getElementById('gh_access_token').value]);
-            
-            // Twitter
-            data.push(['Twitter', 'Client ID', document.getElementById('tw_client_id').value]);
-            data.push(['Twitter', 'Client Secret', document.getElementById('tw_client_secret').value]);
-            data.push(['Twitter', 'Access Token', document.getElementById('tw_access_token').value]);
-            data.push(['Twitter', 'Refresh Token', document.getElementById('tw_refresh_token').value]);
-            
-            // OpenAI
-            data.push(['OpenAI', 'API Key', document.getElementById('oai_api_key').value]);
-            
-            const csvContent = data.map(row => row.join(',')).join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'api_keys.csv');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            log('Saved to CSV successfully');
-        }
+            });
+        })();
     </script>
 </body>
 </html>
