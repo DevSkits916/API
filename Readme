@@ -1,1 +1,116 @@
-hellow world 
+# API Key Manager
+
+A small, browser-based utility to verify API credentials and perform lightweight test actions across several platforms:
+
+- Facebook Graph API
+- GitHub API
+- Twitter (X) API v2
+- OpenAI API
+
+This tool is for **local testing and education**. It is **not** a secure production credential manager. Never deploy it as-is with real client secrets.
+
+---
+
+## Quick Start
+
+1. Clone the repo
+2. Open `index.html` in your browser
+3. Paste temporary tokens (or test keys) and run the verify/test actions
+
+No build step required.
+
+---
+
+## Features
+
+- Per-provider forms with masked inputs and optional show/hide
+- Verifies read access without placing secrets in URLs
+- Test actions:
+  - Facebook: exchange short-lived token for long-lived token (read the warnings first), test `/me` and feed post
+  - GitHub: verify `user` scope and create a private Gist
+  - Twitter (X): verify `users/me` and post a tweet (token-only)
+  - OpenAI: list models and run a minimal chat completion
+- Download credentials snapshot as CSV (for demos only; see Security)
+
+---
+
+## Security
+
+**Important caveats:**
+
+- Browsers are not secure vaults. Anything you type into this page can be seen by:
+  - The page itself (obviously)
+  - Browser extensions
+  - Anyone with access to your machine
+- Do **not** use real app client secrets here. OAuth client secrets belong on a server, not in a browser.
+- Token exchange and refresh flows should be performed on a **backend** you control, using environment variables.
+- The CSV export includes sensitive values. Treat it like a live grenade.
+
+If you need to use real credentials, build the backend described in the TODO section and configure HTTPS, CSP, and strict CORS.
+
+---
+
+## Provider Notes
+
+### Facebook
+- `/me` verification uses `Authorization: Bearer <token>`.
+- Long-lived exchange is demonstrated but should be proxied via backend to protect `app_secret`.
+
+### GitHub
+- Use a **fine-grained** PAT with minimal scopes, or an OAuth access token.
+- Creating a private Gist requires the `gist` scope.
+
+### Twitter (X)
+- Token refresh with client secret is **server-side only**. The UI disables refresh unless you explicitly enable it for local demos.
+- Posting a tweet requires the right app permissions and an access token with scope.
+
+### OpenAI
+- Use a restricted test key. The sample calls list models and run a tiny chat completion.
+
+---
+
+## Keyboard Shortcuts
+
+- `Ctrl/Cmd + Enter` on any provider panel runs **Verify**
+- `Ctrl/Cmd + Shift + Enter` runs the **Test Action** for that panel
+
+---
+
+## Development
+
+This is a single static file. If you want to iterate:
+
+- Run a local server (any static server)
+- Edit `index.html`
+
+Suggested static server:
+```bash
+python3 -m http.server 5173
+
+Roadmap / TODO
+ Backend Proxy (Node/Express or FastAPI): secure routes for:
+Facebook long-lived token exchange
+Twitter OAuth2 token refresh
+OpenAI proxy with rate limiting
+GitHub gist creation proxy
+ Secrets Handling:
+Store provider configs server-side in a vault (1Password/Secrets Manager)
+Never expose client secrets to the browser
+ Encrypted Export/Import:
+Replace CSV with password-based encrypted JSON using Web Crypto + backend KMS
+ CSP & Hardening:
+Add a strict Content Security Policy
+Disable inline handlers; use nonce/hashes
+Sanitize all logs into the UI console
+ Better OAuth UX:
+Guided flows per provider, including scopes and redirect URI checks
+ Rate Limiting and Backoff:
+Client and server retry policies with jitter
+ Unit & E2E Tests:
+Mock network calls and verify UI state transitions
+ Accessibility:
+Form validation hints, error role alerts, visible focus states, reduced-motion option
+ Audit Trail:
+Optional masked activity log, exportable, redacting secrets by default
+ Theming:
+Dark mode, high-contrast mode
