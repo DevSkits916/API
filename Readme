@@ -17,6 +17,7 @@ This tool is for **local testing and education**. It is **not** a secure product
 2. Open `index.html` in your browser
 3. Paste temporary tokens (or test keys) and run the verify/test actions
 4. Open `composer.html` to craft posts once everything looks good
+5. Visit `templates.html` to manage reusable content snippets and export them as CSV
 
 No build step required.
 
@@ -33,6 +34,7 @@ No build step required.
   - OpenAI: list models and run a minimal chat completion
 - Download credentials snapshot as CSV (for demos only; see Security)
 - Dedicated **Post Composer** page that reuses your stored tokens to publish across platforms
+- Brand-new **Template Library** page that reads/writes `post.csv`, lets you tag, search, duplicate, and export announcement snippets
 
 ---
 
