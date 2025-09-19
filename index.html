@@ -70,6 +70,76 @@
             flex-direction: column;
             gap: 1.5rem;
             align-items: center;
+            position: relative;
+        }
+
+        .page-header__top {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .page-header__top .page-nav {
+            margin-left: auto;
+        }
+
+        .app-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.55);
+            box-shadow: 0 18px 35px -22px rgba(15, 23, 42, 0.45);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .app-logo:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 22px 45px -20px rgba(79, 70, 229, 0.45);
+            text-decoration: none;
+        }
+
+        .app-logo__mark {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            background: rgba(15, 23, 42, 0.92);
+        }
+
+        .app-logo__mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .app-logo__text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .app-logo__title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent-strong);
+        }
+
+        .app-logo__subtitle {
+            font-size: 0.72rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--muted);
         }
 
         .page-header__title {
@@ -556,6 +626,20 @@
         }
 
         @media (max-width: 768px) {
+            .page-header__top {
+                flex-direction: column;
+                align-items: center;
+                gap: 1.1rem;
+            }
+
+            .page-header__top .page-nav {
+                margin-left: 0;
+            }
+
+            .app-logo {
+                order: -1;
+            }
+
             .platform-card__header {
                 align-items: flex-start;
             }
@@ -574,11 +658,23 @@
 <body>
     <header class="page-header">
         <div class="page-header__content">
-            <nav class="page-nav" aria-label="Primary">
-                <a href="index.html" class="page-nav__link is-active">Credentials</a>
-                <a href="composer.html" class="page-nav__link">Post Composer</a>
-                <a href="templates.html" class="page-nav__link">Templates</a>
-            </nav>
+            <div class="page-header__top">
+                <a class="app-logo" href="index.html" aria-label="Loki Launcher home">
+                    <span class="app-logo__mark" aria-hidden="true">
+                        <img src="assets/loki-launcher-logo.svg" alt="" />
+                    </span>
+                    <span class="app-logo__text">
+                        <span class="app-logo__title">Loki Launcher</span>
+                        <span class="app-logo__subtitle">Mission Control</span>
+                    </span>
+                </a>
+                <nav class="page-nav" aria-label="Primary">
+                    <a href="index.html" class="page-nav__link is-active">Credentials</a>
+                    <a href="composer.html" class="page-nav__link">Post Composer</a>
+                    <a href="templates.html" class="page-nav__link">Templates</a>
+                    <a href="notifications.html" class="page-nav__link">Notifications</a>
+                </nav>
+            </div>
             <h1 class="page-header__title">API Key Manager</h1>
             <p class="page-header__subtitle">Collect credentials, validate access, and run quick smoke tests for Facebook, GitHub, Twitter (X), and OpenAI APIs without leaving your browser.</p>
         </div>

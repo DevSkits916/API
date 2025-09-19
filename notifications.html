@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications Hub • Loki Launcher</title>
+    <meta name="description" content="Review cross-platform notifications for Facebook, GitHub, Twitter (X), and OpenAI posts with a built-in cooldown timer.">
+    <style>
+        :root {
+            --bg: #f6f8fb;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --muted: #52606d;
+            --border: #e2e8f0;
+            --accent: #6366f1;
+            --accent-strong: #4f46e5;
+            --success: #22c55e;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --console-bg: #0f172a;
+            --console-border: #1e293b;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-card: 0 25px 50px -20px rgba(15, 23, 42, 0.25);
+            --shadow-button: 0 18px 35px -18px rgba(79, 70, 229, 0.65);
+            --shadow-button-hover: 0 24px 45px -20px rgba(79, 70, 229, 0.7);
+            --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-sans);
+            color: var(--text);
+            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0) 55%), var(--bg);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        a {
+            color: var(--accent-strong);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        h1, h2, h3, h4 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .page-header {
+            padding: 3rem 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(14, 165, 233, 0.12));
+        }
+
+        .page-header__content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+            position: relative;
+        }
+
+        .page-header__top {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .page-header__top .page-nav {
+            margin-left: auto;
+        }
+
+        .app-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.55);
+            box-shadow: 0 18px 35px -22px rgba(15, 23, 42, 0.45);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .app-logo:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 22px 45px -20px rgba(79, 70, 229, 0.45);
+            text-decoration: none;
+        }
+
+        .app-logo__mark {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            background: rgba(15, 23, 42, 0.92);
+        }
+
+        .app-logo__mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .app-logo__text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .app-logo__title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent-strong);
+        }
+
+        .app-logo__subtitle {
+            font-size: 0.72rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .page-header__title {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+        }
+
+        .page-header__subtitle {
+            margin: 0 auto;
+            max-width: 660px;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .page-nav {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            padding: 0.45rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid rgba(99, 102, 241, 0.18);
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(6px);
+        }
+
+        .page-nav__link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.45rem 1rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--accent-strong);
+            transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        .page-nav__link:hover {
+            background: rgba(99, 102, 241, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .page-nav__link.is-active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(79, 70, 229, 0.28));
+            color: var(--accent-strong);
+            box-shadow: 0 10px 24px -18px rgba(79, 70, 229, 0.6);
+        }
+
+        .page-nav__link:focus-visible {
+            outline: 3px solid rgba(99, 102, 241, 0.3);
+            outline-offset: 2px;
+        }
+
+        .page-layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.25rem 1.5rem 3rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1100px) {
+            .page-layout {
+                grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr);
+                align-items: start;
+            }
+        }
+
+        .activity-grid {
+            display: grid;
+            gap: 1.75rem;
+        }
+
+        @media (min-width: 1024px) {
+            .activity-grid {
+                grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            }
+        }
+
+        .activity-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.6rem;
+        }
+
+        .activity-card__header {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .activity-card__left {
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+            flex: 1 1 240px;
+        }
+
+        .activity-card__logo {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-md);
+            background: rgba(238, 242, 255, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .activity-card__logo img {
+            max-width: 36px;
+            max-height: 36px;
+        }
+
+        .activity-card__title {
+            font-size: 1.35rem;
+        }
+
+        .activity-card__summary {
+            margin: 0.35rem 0 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .activity-card__body {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .latest-post {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(14, 165, 233, 0.14));
+            border-radius: var(--radius-lg);
+            padding: 1.35rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            text-align: left;
+        }
+
+        .latest-post__meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.85rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .latest-post__title {
+            font-size: 1.18rem;
+            font-weight: 700;
+        }
+
+        .latest-post__excerpt {
+            margin: 0;
+            color: rgba(15, 23, 42, 0.82);
+        }
+
+        .latest-post__stats {
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            margin: 0;
+        }
+
+        .latest-post__stats div {
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: var(--radius-md);
+            padding: 0.6rem 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .latest-post__stats dt {
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .latest-post__stats dd {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .section-title {
+            font-size: 1.05rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .activity-groups__grid {
+            display: grid;
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .activity-groups__grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            }
+        }
+
+        .activity-group {
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: var(--radius-md);
+            padding: 0.9rem 1rem;
+            background: rgba(248, 250, 252, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+
+        .activity-group__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+        }
+
+        .activity-group__title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .activity-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .activity-list__item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .activity-list__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .activity-list__author {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .activity-list__context {
+            padding: 0.1rem 0.4rem;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.18);
+            font-size: 0.72rem;
+        }
+
+        .activity-list__time {
+            margin-left: auto;
+        }
+
+        .activity-list__message {
+            margin: 0;
+            font-size: 0.92rem;
+            color: rgba(15, 23, 42, 0.88);
+        }
+
+        .activity-list__empty {
+            font-size: 0.86rem;
+            color: var(--muted);
+        }
+
+        .timeline {
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.2rem;
+            background: rgba(248, 250, 252, 0.65);
+        }
+
+        .timeline__list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .timeline__item {
+            position: relative;
+            padding-left: 1.75rem;
+        }
+
+        .timeline__item::before {
+            content: '';
+            position: absolute;
+            left: 0.35rem;
+            top: 0.2rem;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.9), rgba(14, 165, 233, 0.9));
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+        .timeline__item + .timeline__item::after {
+            content: '';
+            position: absolute;
+            left: 0.71rem;
+            top: -1.4rem;
+            width: 2px;
+            height: 1.4rem;
+            background: rgba(148, 163, 184, 0.35);
+        }
+
+        .timeline__label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent-strong);
+        }
+
+        .timeline__message {
+            margin: 0.15rem 0 0.35rem;
+            font-size: 0.95rem;
+        }
+
+        .timeline__time {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .cooldown-card,
+        .activity-log-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+        }
+
+        .cooldown-card h2,
+        .activity-log-card h2 {
+            font-size: 1.2rem;
+        }
+
+        .cooldown-control {
+            margin: 1rem 0 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .cooldown-control__row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .cooldown-control__value {
+            font-weight: 600;
+            color: var(--accent-strong);
+        }
+
+        .cooldown-control input[type="range"] {
+            accent-color: var(--accent-strong);
+        }
+
+        .cooldown-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.6rem 0.85rem;
+            border-radius: var(--radius-md);
+            background: rgba(99, 102, 241, 0.08);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .cooldown-status strong {
+            font-size: 1rem;
+            color: var(--accent-strong);
+        }
+
+        .activity-log-card__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .console-log {
+            height: 320px;
+            overflow-y: auto;
+            background: var(--console-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--console-border);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            font-family: var(--font-mono);
+            color: #e2e8f0;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            border-left: 3px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 0.55rem 0.7rem;
+            background: rgba(148, 163, 184, 0.12);
+            font-size: 0.86rem;
+        }
+
+        .log-entry__time {
+            color: rgba(226, 232, 240, 0.65);
+            font-variant-numeric: tabular-nums;
+            min-width: 72px;
+        }
+
+        .log-entry__message {
+            flex: 1;
+        }
+
+        .log-entry--success {
+            border-left-color: rgba(34, 197, 94, 0.9);
+            background: rgba(34, 197, 94, 0.14);
+            color: #bbf7d0;
+        }
+
+        .log-entry--error {
+            border-left-color: rgba(248, 113, 113, 0.95);
+            background: rgba(248, 113, 113, 0.16);
+            color: #fecaca;
+        }
+
+        .log-entry--info {
+            border-left-color: rgba(59, 130, 246, 0.85);
+            background: rgba(59, 130, 246, 0.16);
+            color: #bfdbfe;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+            padding: 0.6rem 1.05rem;
+        }
+
+        .button--primary {
+            background: linear-gradient(135deg, #6366f1, #4338ca);
+            color: #ffffff;
+            box-shadow: var(--shadow-button);
+        }
+
+        .button--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-button-hover);
+        }
+
+        .button--primary:focus-visible {
+            outline: 3px solid rgba(99, 102, 241, 0.3);
+            outline-offset: 2px;
+        }
+
+        .button--secondary {
+            background: rgba(15, 23, 42, 0.06);
+            color: var(--text);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .button--secondary:hover {
+            background: rgba(15, 23, 42, 0.12);
+        }
+
+        .button--ghost {
+            background: transparent;
+            color: var(--accent-strong);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+        }
+
+        .button--ghost:hover {
+            background: rgba(79, 70, 229, 0.08);
+        }
+
+        .button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+        }
+
+        .button.is-busy::after {
+            content: '';
+            width: 0.9rem;
+            height: 0.9rem;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2rem;
+            padding: 0.25rem 0.55rem;
+            border-radius: 999px;
+            background: rgba(79, 70, 229, 0.14);
+            color: var(--accent-strong);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .small {
+            font-size: 0.78rem;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-header__top {
+                flex-direction: column;
+                align-items: center;
+                gap: 1.1rem;
+            }
+
+            .page-header__top .page-nav {
+                margin-left: 0;
+            }
+
+            .app-logo {
+                order: -1;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header__content">
+            <div class="page-header__top">
+                <a class="app-logo" href="index.html" aria-label="Loki Launcher home">
+                    <span class="app-logo__mark" aria-hidden="true">
+                        <img src="assets/loki-launcher-logo.svg" alt="" />
+                    </span>
+                    <span class="app-logo__text">
+                        <span class="app-logo__title">Loki Launcher</span>
+                        <span class="app-logo__subtitle">Mission Control</span>
+                    </span>
+                </a>
+                <nav class="page-nav" aria-label="Primary">
+                    <a href="index.html" class="page-nav__link">Credentials</a>
+                    <a href="composer.html" class="page-nav__link">Post Composer</a>
+                    <a href="templates.html" class="page-nav__link">Templates</a>
+                    <a href="notifications.html" class="page-nav__link is-active">Notifications</a>
+                </nav>
+            </div>
+            <h1 class="page-header__title">Notifications Hub</h1>
+            <p class="page-header__subtitle">Review comments, likes, mentions, and every signal from your latest posts. Trigger updates safely with the built-in cooldown to avoid platform rate flags.</p>
+        </div>
+    </header>
+
+    <main class="page-layout page-layout--notifications">
+        <section class="activity-grid" aria-label="Platform notifications">
+            <article class="activity-card" data-platform="facebook">
+                <header class="activity-card__header">
+                    <div class="activity-card__left">
+                        <div class="activity-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook logo">
+                        </div>
+                        <div>
+                            <h2 class="activity-card__title">Facebook</h2>
+                            <p class="activity-card__summary" data-field="summary">Loading latest signals…</p>
+                        </div>
+                    </div>
+                    <button type="button" class="button button--secondary" data-action="refresh-activity" data-platform="facebook">Refresh activity</button>
+                </header>
+                <div class="activity-card__body">
+                    <section class="latest-post" aria-label="Latest post overview">
+                        <div class="latest-post__meta">
+                            <h3>Latest Post</h3>
+                            <span data-field="post-published" title="">—</span>
+                        </div>
+                        <h4 class="latest-post__title" data-field="post-title">Loading…</h4>
+                        <p class="latest-post__excerpt" data-field="post-preview">We’re syncing fresh data from the Graph API.</p>
+                        <dl class="latest-post__stats" data-post-stats></dl>
+                    </section>
+                    <section class="activity-groups" aria-label="Engagement breakdown">
+                        <h3 class="section-title">Engagement</h3>
+                        <div class="activity-groups__grid" data-groups></div>
+                    </section>
+                    <section class="timeline" aria-label="Activity timeline">
+                        <h3 class="section-title">Activity Timeline</h3>
+                        <ul class="timeline__list" data-timeline></ul>
+                    </section>
+                </div>
+            </article>
+
+            <article class="activity-card" data-platform="github">
+                <header class="activity-card__header">
+                    <div class="activity-card__left">
+                        <div class="activity-card__logo">
+                            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub logo">
+                        </div>
+                        <div>
+                            <h2 class="activity-card__title">GitHub</h2>
+                            <p class="activity-card__summary" data-field="summary">Loading repository activity…</p>
+                        </div>
+                    </div>
+                    <button type="button" class="button button--secondary" data-action="refresh-activity" data-platform="github">Refresh activity</button>
+                </header>
+                <div class="activity-card__body">
+                    <section class="latest-post" aria-label="Latest post overview">
+                        <div class="latest-post__meta">
+                            <h3>Latest Post</h3>
+                            <span data-field="post-published" title="">—</span>
+                        </div>
+                        <h4 class="latest-post__title" data-field="post-title">Loading…</h4>
+                        <p class="latest-post__excerpt" data-field="post-preview">Watching issues, pull requests, and stars…</p>
+                        <dl class="latest-post__stats" data-post-stats></dl>
+                    </section>
+                    <section class="activity-groups" aria-label="Engagement breakdown">
+                        <h3 class="section-title">Engagement</h3>
+                        <div class="activity-groups__grid" data-groups></div>
+                    </section>
+                    <section class="timeline" aria-label="Activity timeline">
+                        <h3 class="section-title">Activity Timeline</h3>
+                        <ul class="timeline__list" data-timeline></ul>
+                    </section>
+                </div>
+            </article>
+            <article class="activity-card" data-platform="twitter">
+                <header class="activity-card__header">
+                    <div class="activity-card__left">
+                        <div class="activity-card__logo">
+                            <img src="https://abs.twimg.com/responsive-web/client-web/icon-ios.b1fc7275.png" alt="Twitter X logo">
+                        </div>
+                        <div>
+                            <h2 class="activity-card__title">Twitter (X)</h2>
+                            <p class="activity-card__summary" data-field="summary">Loading tweets and mentions…</p>
+                        </div>
+                    </div>
+                    <button type="button" class="button button--secondary" data-action="refresh-activity" data-platform="twitter">Refresh activity</button>
+                </header>
+                <div class="activity-card__body">
+                    <section class="latest-post" aria-label="Latest post overview">
+                        <div class="latest-post__meta">
+                            <h3>Latest Post</h3>
+                            <span data-field="post-published" title="">—</span>
+                        </div>
+                        <h4 class="latest-post__title" data-field="post-title">Loading…</h4>
+                        <p class="latest-post__excerpt" data-field="post-preview">Checking replies, reshares, and likes…</p>
+                        <dl class="latest-post__stats" data-post-stats></dl>
+                    </section>
+                    <section class="activity-groups" aria-label="Engagement breakdown">
+                        <h3 class="section-title">Engagement</h3>
+                        <div class="activity-groups__grid" data-groups></div>
+                    </section>
+                    <section class="timeline" aria-label="Activity timeline">
+                        <h3 class="section-title">Activity Timeline</h3>
+                        <ul class="timeline__list" data-timeline></ul>
+                    </section>
+                </div>
+            </article>
+
+            <article class="activity-card" data-platform="openai">
+                <header class="activity-card__header">
+                    <div class="activity-card__left">
+                        <div class="activity-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/OpenAI_Logo.svg" alt="OpenAI logo">
+                        </div>
+                        <div>
+                            <h2 class="activity-card__title">OpenAI</h2>
+                            <p class="activity-card__summary" data-field="summary">Loading prompt and usage feedback…</p>
+                        </div>
+                    </div>
+                    <button type="button" class="button button--secondary" data-action="refresh-activity" data-platform="openai">Refresh activity</button>
+                </header>
+                <div class="activity-card__body">
+                    <section class="latest-post" aria-label="Latest post overview">
+                        <div class="latest-post__meta">
+                            <h3>Latest Post</h3>
+                            <span data-field="post-published" title="">—</span>
+                        </div>
+                        <h4 class="latest-post__title" data-field="post-title">Loading…</h4>
+                        <p class="latest-post__excerpt" data-field="post-preview">Collecting usage signals and human feedback…</p>
+                        <dl class="latest-post__stats" data-post-stats></dl>
+                    </section>
+                    <section class="activity-groups" aria-label="Engagement breakdown">
+                        <h3 class="section-title">Engagement</h3>
+                        <div class="activity-groups__grid" data-groups></div>
+                    </section>
+                    <section class="timeline" aria-label="Activity timeline">
+                        <h3 class="section-title">Activity Timeline</h3>
+                        <ul class="timeline__list" data-timeline></ul>
+                    </section>
+                </div>
+            </article>
+        </section>
+
+        <aside class="sidebar">
+            <section class="cooldown-card" aria-labelledby="cooldown-title">
+                <h2 id="cooldown-title">Posting Cooldown</h2>
+                <p class="muted">Set the minimum delay between outbound posts so automations never trip rate limits.</p>
+                <div class="cooldown-control">
+                    <div class="cooldown-control__row">
+                        <label for="cooldown-duration">Cooldown (seconds)</label>
+                        <span class="cooldown-control__value" id="cooldown-duration-label">90s</span>
+                    </div>
+                    <input type="range" id="cooldown-duration" min="30" max="300" step="15" value="90" aria-describedby="cooldown-title">
+                </div>
+                <div class="cooldown-status" aria-live="polite">
+                    <span>Next allowed post</span>
+                    <strong id="cooldown-status">Ready</strong>
+                </div>
+                <button type="button" class="button button--primary" id="cooldown-trigger">Simulate cross-post</button>
+                <p class="muted small">The cooldown disables posting while the timer runs to keep your accounts safe.</p>
+            </section>
+
+            <section class="activity-log-card" aria-labelledby="activity-log-title">
+                <div class="activity-log-card__header">
+                    <h2 id="activity-log-title">Notifications Log</h2>
+                    <button type="button" class="button button--ghost" id="clear-log">Clear log</button>
+                </div>
+                <div id="notifications-console" class="console-log" role="log" aria-live="polite" aria-atomic="false"></div>
+            </section>
+        </aside>
+    </main>
+    <script>
+        (() => {
+            const consoleEl = document.getElementById('notifications-console');
+            const clearLogBtn = document.getElementById('clear-log');
+            const slider = document.getElementById('cooldown-duration');
+            const sliderLabel = document.getElementById('cooldown-duration-label');
+            const statusEl = document.getElementById('cooldown-status');
+            const triggerBtn = document.getElementById('cooldown-trigger');
+            let cooldownTimerId = null;
+            let cooldownEndsAt = null;
+
+            const log = (message, type = 'info') => {
+                if (!consoleEl) {
+                    return;
+                }
+
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-entry--${type}`;
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'log-entry__time';
+                timeSpan.textContent = new Date().toLocaleTimeString();
+
+                const messageSpan = document.createElement('span');
+                messageSpan.className = 'log-entry__message';
+                messageSpan.textContent = message;
+
+                entry.append(timeSpan, messageSpan);
+                consoleEl.appendChild(entry);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            };
+
+            clearLogBtn?.addEventListener('click', () => {
+                if (consoleEl) {
+                    consoleEl.innerHTML = '';
+                }
+                log('Activity log cleared.', 'info');
+            });
+
+            const formatRelativeTime = (isoString) => {
+                const target = new Date(isoString);
+                const diffMs = Date.now() - target.getTime();
+                const minutes = Math.max(0, Math.round(diffMs / 60000));
+
+                if (minutes < 1) {
+                    return 'Just now';
+                }
+                if (minutes === 1) {
+                    return '1 minute ago';
+                }
+                if (minutes < 60) {
+                    return `${minutes} minutes ago`;
+                }
+
+                const hours = Math.round(minutes / 60);
+                if (hours === 1) {
+                    return '1 hour ago';
+                }
+                if (hours < 24) {
+                    return `${hours} hours ago`;
+                }
+
+                const days = Math.round(hours / 24);
+                if (days === 1) {
+                    return '1 day ago';
+                }
+                return `${days} days ago`;
+            };
+
+            const toIsoMinutesAgo = (minutes) => new Date(Date.now() - minutes * 60000).toISOString();
+            const jitterMinutes = (minutes) => Math.max(1, minutes + Math.floor(Math.random() * 7) - 3);
+            const shuffle = (array) => array.map((value) => ({ value, sort: Math.random() })).sort((a, b) => a.sort - b.sort).map(({ value }) => value);
+
+            const baseActivity = {
+                facebook: {
+                    name: 'Facebook',
+                    summary: 'Monitor posts, mentions, and reactions across your Meta surfaces.',
+                    post: {
+                        title: 'Countdown to the Loki Launcher window',
+                        preview: 'Fueling complete. Mission control is running final checks before tomorrow’s demo stream.',
+                        minutesAgo: 42,
+                        stats: [
+                            { label: 'Reach', value: '12.4K' },
+                            { label: 'Clicks', value: '328' },
+                            { label: 'Boosts', value: '3 running' }
+                        ],
+                    },
+                    categories: [
+                        {
+                            key: 'comments',
+                            label: 'Comments',
+                            emptyText: 'No new comments right now.',
+                            items: [
+                                { author: 'Dana Shah', message: 'Counting down with the crew! 🚀', context: 'Main page post', minutesAgo: 5 },
+                                { author: 'Orbit News', message: 'Feature request: behind-the-scenes stream please?', context: 'Shared article', minutesAgo: 18 },
+                                { author: 'Sven K.', message: 'How do we join the beta?', context: 'Inbox comment', minutesAgo: 34 },
+                            ],
+                        },
+                        {
+                            key: 'likes',
+                            label: 'Reactions & Likes',
+                            emptyText: 'No new reactions yet.',
+                            items: [
+                                { author: 'Nia Alvarez', message: 'Loved the mission patch art.', minutesAgo: 9 },
+                                { author: 'Team Zenith', message: '🔥🔥🔥', minutesAgo: 24 },
+                                { author: 'Riley Chen', message: '👍 on your latest update', minutesAgo: 50 },
+                            ],
+                        },
+                        {
+                            key: 'mentions',
+                            label: 'Mentions',
+                            emptyText: 'No recent mentions logged.',
+                            items: [
+                                { author: 'LaunchDaily', message: 'Tagged you in a story: “Loki Launcher leading the pack.”', minutesAgo: 47 },
+                                { author: 'Atlas Aerospace', message: 'Mentioned Loki Launcher in a recruitment post.', minutesAgo: 65 },
+                            ],
+                        },
+                        {
+                            key: 'shares',
+                            label: 'Shares',
+                            emptyText: 'No new shares right now.',
+                            items: [
+                                { author: 'Spacefront Podcast', message: 'Shared your update to 5K followers.', minutesAgo: 28 },
+                                { author: 'Marina L.', message: 'Shared in the Orbital Ops community.', minutesAgo: 71 },
+                            ],
+                        },
+                    ],
+                    timeline: [
+                        { type: 'Comment', message: 'Dana Shah: “Counting down with the crew!”', minutesAgo: 5 },
+                        { type: 'Reaction', message: 'Nia Alvarez reacted ❤️ to your post.', minutesAgo: 9 },
+                        { type: 'Share', message: 'Spacefront Podcast reshared your countdown teaser.', minutesAgo: 28 },
+                        { type: 'Comment', message: 'Sven K. asked about beta access.', minutesAgo: 34 },
+                        { type: 'Mention', message: 'LaunchDaily tagged Loki Launcher in a story.', minutesAgo: 47 },
+                    ],
+                },
+                github: {
+                    name: 'GitHub',
+                    summary: 'Track repository discussions, stars, and mentions without leaving the dashboard.',
+                    post: {
+                        title: 'Release Candidate v0.9.0 – Autopilot orchestrations',
+                        preview: 'Preflight automation scripts landed in the repo along with telemetry exports.',
+                        minutesAgo: 58,
+                        stats: [
+                            { label: 'Stars today', value: '+42' },
+                            { label: 'Open issues', value: '7' },
+                            { label: 'Deploys queued', value: '2' },
+                        ],
+                    },
+                    categories: [
+                        {
+                            key: 'comments',
+                            label: 'Issue & PR Comments',
+                            emptyText: 'No new discussions.',
+                            items: [
+                                { author: 'Priya K.', message: 'Left review on #214 “Autopilot watchers”.', context: 'PR #214', minutesAgo: 12 },
+                                { author: 'Leo T.', message: 'Asked for telemetry docs in #198.', context: 'Issue #198', minutesAgo: 33 },
+                                { author: 'Marta V.', message: 'Approved the workflow update.', context: 'PR #209', minutesAgo: 44 },
+                            ],
+                        },
+                        {
+                            key: 'likes',
+                            label: 'Reactions & Stars',
+                            emptyText: 'No fresh reactions yet.',
+                            items: [
+                                { author: 'octonaut', message: '⭐ Starred loki-launcher repo.', minutesAgo: 8 },
+                                { author: 'nebula-labs', message: 'Added 👍 to roadmap issue.', minutesAgo: 26 },
+                                { author: 'CassiniOps', message: '⭐ Starred your repository.', minutesAgo: 52 },
+                            ],
+                        },
+                        {
+                            key: 'mentions',
+                            label: 'Mentions',
+                            emptyText: 'No recent mentions detected.',
+                            items: [
+                                { author: 'MissionOps', message: 'Referenced your autopilot docs in mission control repo.', minutesAgo: 39 },
+                                { author: 'FlightCore', message: 'Mentioned Loki Launcher in README updates.', minutesAgo: 63 },
+                            ],
+                        },
+                        {
+                            key: 'reviews',
+                            label: 'Review Status',
+                            emptyText: 'No review updates.',
+                            items: [
+                                { author: 'Automation Bot', message: 'Checks completed for rc-v0.9.0 pipeline.', minutesAgo: 21 },
+                                { author: 'Aria G.', message: 'Requested changes on telemetry export.', minutesAgo: 46 },
+                            ],
+                        },
+                    ],
+                    timeline: [
+                        { type: 'Comment', message: 'Priya K. reviewed PR #214.', minutesAgo: 12 },
+                        { type: 'Star', message: 'octonaut starred loki-launcher.', minutesAgo: 8 },
+                        { type: 'Mention', message: 'MissionOps mentioned your docs.', minutesAgo: 39 },
+                        { type: 'Review', message: 'Automation Bot reported green checks.', minutesAgo: 21 },
+                        { type: 'Comment', message: 'Leo T. commented on Issue #198.', minutesAgo: 33 },
+                    ],
+                },
+                twitter: {
+                    name: 'Twitter (X)',
+                    summary: 'Watch replies, likes, and reshares across your latest launch thread.',
+                    post: {
+                        title: 'Thread: Loki Launcher autopilot is live',
+                        preview: 'Autopilot now sequences checklists across platforms. Pilots wanted for the beta.',
+                        minutesAgo: 17,
+                        stats: [
+                            { label: 'Impressions', value: '58.1K' },
+                            { label: 'Engagement', value: '3.4K' },
+                            { label: 'Reshares', value: '128' },
+                        ],
+                    },
+                    categories: [
+                        {
+                            key: 'comments',
+                            label: 'Replies',
+                            emptyText: 'No replies right now.',
+                            items: [
+                                { author: '@orbital_jules', message: 'This is the ops stack we’ve waited for.', context: 'Reply', minutesAgo: 4 },
+                                { author: '@missionMira', message: 'Can we automate payload briefs too?', minutesAgo: 14 },
+                                { author: '@launchloop', message: 'DM sent about integrations.', minutesAgo: 29 },
+                            ],
+                        },
+                        {
+                            key: 'likes',
+                            label: 'Likes',
+                            emptyText: 'No likes recorded.',
+                            items: [
+                                { author: '@vectorfield', message: 'liked your post', minutesAgo: 6 },
+                                { author: '@astrodev', message: 'liked your post', minutesAgo: 11 },
+                                { author: '@delta-nine', message: 'liked your thread', minutesAgo: 33 },
+                            ],
+                        },
+                        {
+                            key: 'mentions',
+                            label: 'Mentions',
+                            emptyText: 'No mentions found.',
+                            items: [
+                                { author: '@boostersclub', message: 'Mentioned you in a space invite.', minutesAgo: 25 },
+                                { author: '@payloadpress', message: 'Tagged @LokiLauncher in news roundup.', minutesAgo: 48 },
+                            ],
+                        },
+                        {
+                            key: 'shares',
+                            label: 'Quotes & Reshares',
+                            emptyText: 'No reshares to show.',
+                            items: [
+                                { author: '@ignite_rides', message: 'Quote tweeted: “Autopilot for launch teams is here.”', minutesAgo: 19 },
+                                { author: '@skywardops', message: 'Retweeted your countdown GIF.', minutesAgo: 41 },
+                            ],
+                        },
+                    ],
+                    timeline: [
+                        { type: 'Reply', message: '@orbital_jules replied to your thread.', minutesAgo: 4 },
+                        { type: 'Like', message: '@astrodev liked your post.', minutesAgo: 11 },
+                        { type: 'Reshare', message: '@ignite_rides quote tweeted your announcement.', minutesAgo: 19 },
+                        { type: 'Mention', message: '@boostersclub mentioned @LokiLauncher.', minutesAgo: 25 },
+                        { type: 'DM', message: '@launchloop sent you a DM.', minutesAgo: 29 },
+                    ],
+                },
+                openai: {
+                    name: 'OpenAI',
+                    summary: 'Keep tabs on prompt pack feedback and API usage pings from the community.',
+                    post: {
+                        title: 'Prompt Pack: Loki Launcher autopilot briefing',
+                        preview: 'Uploaded a curated prompt pack for mission leads to test the new automation flows.',
+                        minutesAgo: 91,
+                        stats: [
+                            { label: 'Usage (24h)', value: '47K tokens' },
+                            { label: 'Feedback', value: '12 notes' },
+                            { label: 'Mentions', value: '5 new' },
+                        ],
+                    },
+                    categories: [
+                        {
+                            key: 'comments',
+                            label: 'Feedback',
+                            emptyText: 'No new feedback yet.',
+                            items: [
+                                { author: 'Ops QA', message: 'Flagged a missing checklist variable in prompt #4.', minutesAgo: 22 },
+                                { author: 'Launch Academy', message: 'Loved the training scenario sample.', minutesAgo: 58 },
+                            ],
+                        },
+                        {
+                            key: 'likes',
+                            label: 'Reactions',
+                            emptyText: 'No new reactions logged.',
+                            items: [
+                                { author: 'Mission Design Lab', message: 'Gave a 👍 on the autopilot walkthrough.', minutesAgo: 37 },
+                                { author: 'Flight Sim Collective', message: 'Marked prompt pack as favorite.', minutesAgo: 73 },
+                            ],
+                        },
+                        {
+                            key: 'mentions',
+                            label: 'Mentions',
+                            emptyText: 'No mentions registered.',
+                            items: [
+                                { author: 'Ops Dispatch', message: 'Mentioned the pack in weekly digest.', minutesAgo: 64 },
+                                { author: 'PromptOps', message: 'Linked to your case study.', minutesAgo: 82 },
+                            ],
+                        },
+                        {
+                            key: 'alerts',
+                            label: 'Usage Alerts',
+                            emptyText: 'No alerts triggered.',
+                            items: [
+                                { author: 'Rate Limit Monitor', message: 'Spike detected — fallback tier engaged.', minutesAgo: 18 },
+                                { author: 'Latency Watcher', message: 'Latency holding at 320ms (normal).', minutesAgo: 49 },
+                            ],
+                        },
+                    ],
+                    timeline: [
+                        { type: 'Feedback', message: 'Ops QA flagged a missing variable.', minutesAgo: 22 },
+                        { type: 'Reaction', message: 'Mission Design Lab gave a 👍.', minutesAgo: 37 },
+                        { type: 'Alert', message: 'Rate Limit Monitor noted a usage spike.', minutesAgo: 18 },
+                        { type: 'Mention', message: 'Ops Dispatch mentioned your pack.', minutesAgo: 64 },
+                        { type: 'Feedback', message: 'Launch Academy applauded the scenario.', minutesAgo: 58 },
+                    ],
+                },
+            };
+            const state = {};
+
+            const createSnapshot = (platform) => {
+                const base = baseActivity[platform];
+                if (!base) {
+                    return null;
+                }
+
+                return {
+                    name: base.name,
+                    summary: base.summary,
+                    post: {
+                        title: base.post.title,
+                        preview: base.post.preview,
+                        publishedAt: toIsoMinutesAgo(jitterMinutes(base.post.minutesAgo)),
+                        stats: base.post.stats.map((stat) => ({ ...stat })),
+                    },
+                    categories: base.categories.map((category) => ({
+                        ...category,
+                        items: shuffle(category.items).map((item) => ({
+                            ...item,
+                            at: toIsoMinutesAgo(jitterMinutes(item.minutesAgo)),
+                        })),
+                    })),
+                    timeline: shuffle(base.timeline).map((item) => ({
+                        ...item,
+                        at: toIsoMinutesAgo(jitterMinutes(item.minutesAgo)),
+                    })),
+                };
+            };
+
+            const renderPlatform = (platform) => {
+                const card = document.querySelector(`[data-platform="${platform}"]`);
+                const data = state[platform];
+                if (!card || !data) {
+                    return;
+                }
+
+                const summaryEl = card.querySelector('[data-field="summary"]');
+                if (summaryEl) {
+                    summaryEl.textContent = data.summary;
+                }
+
+                const publishedEl = card.querySelector('[data-field="post-published"]');
+                if (publishedEl) {
+                    publishedEl.textContent = formatRelativeTime(data.post.publishedAt);
+                    publishedEl.setAttribute('title', new Date(data.post.publishedAt).toLocaleString());
+                }
+
+                const titleEl = card.querySelector('[data-field="post-title"]');
+                if (titleEl) {
+                    titleEl.textContent = data.post.title;
+                }
+
+                const previewEl = card.querySelector('[data-field="post-preview"]');
+                if (previewEl) {
+                    previewEl.textContent = data.post.preview;
+                }
+
+                const statsContainer = card.querySelector('[data-post-stats]');
+                if (statsContainer) {
+                    statsContainer.innerHTML = '';
+                    data.post.stats.forEach((stat) => {
+                        const wrapper = document.createElement('div');
+                        const dt = document.createElement('dt');
+                        dt.textContent = stat.label;
+                        const dd = document.createElement('dd');
+                        dd.textContent = stat.value;
+                        wrapper.append(dt, dd);
+                        statsContainer.appendChild(wrapper);
+                    });
+                }
+
+                const groupsContainer = card.querySelector('[data-groups]');
+                if (groupsContainer) {
+                    groupsContainer.innerHTML = '';
+                    data.categories.forEach((category) => {
+                        const group = document.createElement('article');
+                        group.className = 'activity-group';
+
+                        const header = document.createElement('header');
+                        header.className = 'activity-group__header';
+
+                        const nameEl = document.createElement('span');
+                        nameEl.className = 'activity-group__title';
+                        nameEl.textContent = category.label;
+
+                        const badge = document.createElement('span');
+                        badge.className = 'badge';
+                        badge.textContent = String(category.items.length);
+
+                        header.append(nameEl, badge);
+                        group.append(header);
+
+                        const list = document.createElement('ul');
+                        list.className = 'activity-list';
+
+                        if (!category.items.length) {
+                            const emptyItem = document.createElement('li');
+                            emptyItem.className = 'activity-list__empty';
+                            emptyItem.textContent = category.emptyText || 'No activity logged yet.';
+                            list.appendChild(emptyItem);
+                        } else {
+                            category.items.forEach((item) => {
+                                const li = document.createElement('li');
+                                li.className = 'activity-list__item';
+
+                                const meta = document.createElement('div');
+                                meta.className = 'activity-list__meta';
+
+                                const author = document.createElement('span');
+                                author.className = 'activity-list__author';
+                                author.textContent = item.author;
+                                meta.appendChild(author);
+
+                                if (item.context) {
+                                    const context = document.createElement('span');
+                                    context.className = 'activity-list__context';
+                                    context.textContent = item.context;
+                                    meta.appendChild(context);
+                                }
+
+                                const time = document.createElement('span');
+                                time.className = 'activity-list__time';
+                                time.textContent = formatRelativeTime(item.at);
+                                time.setAttribute('title', new Date(item.at).toLocaleString());
+                                meta.appendChild(time);
+
+                                const message = document.createElement('p');
+                                message.className = 'activity-list__message';
+                                message.textContent = item.message;
+
+                                li.append(meta, message);
+                                list.appendChild(li);
+                            });
+                        }
+
+                        group.appendChild(list);
+                        groupsContainer.appendChild(group);
+                    });
+                }
+
+                const timelineContainer = card.querySelector('[data-timeline]');
+                if (timelineContainer) {
+                    timelineContainer.innerHTML = '';
+                    if (!data.timeline.length) {
+                        const li = document.createElement('li');
+                        li.className = 'timeline__item';
+                        const message = document.createElement('div');
+                        message.className = 'timeline__message';
+                        message.textContent = 'No recent activity recorded.';
+                        li.appendChild(message);
+                        timelineContainer.appendChild(li);
+                    } else {
+                        data.timeline.forEach((item) => {
+                            const li = document.createElement('li');
+                            li.className = 'timeline__item';
+
+                            const label = document.createElement('div');
+                            label.className = 'timeline__label';
+                            label.textContent = item.type;
+
+                            const message = document.createElement('div');
+                            message.className = 'timeline__message';
+                            message.textContent = item.message;
+
+                            const time = document.createElement('span');
+                            time.className = 'timeline__time';
+                            const localTime = new Date(item.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            time.textContent = `${formatRelativeTime(item.at)} • ${localTime}`;
+                            time.setAttribute('title', new Date(item.at).toLocaleString());
+
+                            li.append(label, message, time);
+                            timelineContainer.appendChild(li);
+                        });
+                    }
+                }
+            };
+
+            const renderAll = () => {
+                Object.keys(state).forEach((platform) => {
+                    renderPlatform(platform);
+                });
+            };
+
+            document.querySelectorAll('[data-action="refresh-activity"]').forEach((button) => {
+                const platform = button.dataset.platform;
+                button.addEventListener('click', () => {
+                    if (!platform || !baseActivity[platform]) {
+                        return;
+                    }
+
+                    const label = baseActivity[platform].name || platform;
+                    button.disabled = true;
+                    button.classList.add('is-busy');
+                    log(`Refreshing ${label} activity…`, 'info');
+
+                    window.setTimeout(() => {
+                        try {
+                            state[platform] = createSnapshot(platform);
+                            renderPlatform(platform);
+                            log(`${label} activity refreshed.`, 'success');
+                        } catch (error) {
+                            console.error(error);
+                            log(`Unable to refresh ${label}.`, 'error');
+                        } finally {
+                            button.disabled = false;
+                            button.classList.remove('is-busy');
+                        }
+                    }, 550);
+                });
+            });
+
+            const updateSliderLabel = () => {
+                if (slider && sliderLabel) {
+                    sliderLabel.textContent = `${slider.value}s`;
+                }
+            };
+
+            const updateCooldownStatus = () => {
+                if (!statusEl) {
+                    return;
+                }
+
+                if (!cooldownEndsAt) {
+                    statusEl.textContent = 'Ready';
+                    if (triggerBtn) {
+                        triggerBtn.disabled = false;
+                    }
+                    return;
+                }
+
+                const remaining = Math.max(0, Math.ceil((cooldownEndsAt - Date.now()) / 1000));
+                if (remaining <= 0) {
+                    cooldownEndsAt = null;
+                    if (cooldownTimerId) {
+                        clearInterval(cooldownTimerId);
+                        cooldownTimerId = null;
+                    }
+                    statusEl.textContent = 'Ready';
+                    if (triggerBtn) {
+                        triggerBtn.disabled = false;
+                    }
+                    log('Cooldown complete. Posting re-enabled.', 'success');
+                    return;
+                }
+
+                statusEl.textContent = `${remaining}s remaining`;
+                if (triggerBtn) {
+                    triggerBtn.disabled = true;
+                }
+            };
+
+            const startCooldown = () => {
+                if (!slider) {
+                    return;
+                }
+
+                cooldownEndsAt = Date.now() + Number(slider.value) * 1000;
+                updateCooldownStatus();
+                if (cooldownTimerId) {
+                    clearInterval(cooldownTimerId);
+                }
+                cooldownTimerId = window.setInterval(updateCooldownStatus, 1000);
+            };
+
+            triggerBtn?.addEventListener('click', () => {
+                if (cooldownEndsAt && cooldownEndsAt > Date.now()) {
+                    log('Cooldown is still active. Wait before triggering another post.', 'info');
+                    return;
+                }
+
+                log('Simulated cross-post triggered. Cooldown started.', 'info');
+                startCooldown();
+            });
+
+            slider?.addEventListener('input', () => {
+                updateSliderLabel();
+                if (!cooldownEndsAt && statusEl) {
+                    statusEl.textContent = 'Ready';
+                }
+            });
+
+            Object.keys(baseActivity).forEach((platform) => {
+                state[platform] = createSnapshot(platform);
+            });
+
+            renderAll();
+            updateSliderLabel();
+            updateCooldownStatus();
+            log('Notifications hub initialised. Monitoring all channels.', 'info');
+        })();
+    </script>
+</body>
+</html>
