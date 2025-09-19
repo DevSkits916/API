@@ -3,351 +3,1684 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Key Manager</title>
+    <title>Enhanced API Key Manager</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .platform { margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; display: flex; align-items: flex-start; }
-        .platform img { width: 50px; height: auto; margin-right: 20px; }
-        .platform-content { flex: 1; }
-        .platform h2 { margin-top: 0; }
-        input { display: block; margin-bottom: 10px; width: 100%; }
-        button { margin-right: 10px; }
-        #console { height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background: #f8f8f8; }
-        .links { margin-top: 20px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd8;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --error: #f56565;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text: #2d3748;
+            --text-light: #4a5568;
+            --border: #e2e8f0;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+        }
+
+        .platform {
+            background: var(--card-bg);
+            border-radius: 20px;
+            margin-bottom: 25px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .platform::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .platform:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .platform:hover::before {
+            transform: scaleX(1);
+        }
+
+        .platform-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .platform-logo {
+            width: 60px;
+            height: 60px;
+            margin-right: 20px;
+            border-radius: 12px;
+            padding: 10px;
+            background: #f7fafc;
+            object-fit: contain;
+        }
+
+        .platform-info h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #cbd5e0;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.verified {
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.error {
+            background: var(--error);
+        }
+
+        .status-indicator.loading {
+            background: var(--warning);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .platform-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input[readonly] {
+            background: #f7fafc;
+            color: var(--text-light);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+            box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #dd6b20;
+            box-shadow: 0 8px 25px rgba(237, 137, 54, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .main-actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .main-actions .btn {
+            padding: 16px 32px;
+            font-size: 16px;
+        }
+
+        .console-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: var(--shadow);
+        }
+
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .console-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .console-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        #console {
+            height: 300px;
+            overflow-y: auto;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            background: #1a202c;
+            color: #e2e8f0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-left: 3px solid transparent;
+            padding-left: 12px;
+        }
+
+        .log-entry.success {
+            color: #68d391;
+            border-left-color: #68d391;
+        }
+
+        .log-entry.error {
+            color: #fc8181;
+            border-left-color: #fc8181;
+        }
+
+        .log-entry.warning {
+            color: #f6ad55;
+            border-left-color: #f6ad55;
+        }
+
+        .log-entry.info {
+            color: #90cdf4;
+            border-left-color: #90cdf4;
+        }
+
+        .resources {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: var(--shadow);
+        }
+
+        .resources h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .resource-item {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .resource-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .resource-item h4 {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+
+        .resource-item p {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            z-index: 10;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: var(--success);
+        }
+
+        .notification.error {
+            background: var(--error);
+        }
+
+        .notification.warning {
+            background: var(--warning);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .platform {
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                justify-content: center;
+            }
+
+            .main-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .console-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>API Key Manager</h1>
-    
-    <div id="facebook" class="platform">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook Logo">
-        <div class="platform-content">
-            <h2>Facebook</h2>
-            <label>App ID: <input type="text" id="fb_app_id"></label>
-            <label>App Secret: <input type="text" id="fb_app_secret"></label>
-            <label>Short-lived User Access Token: <input type="text" id="fb_short_token"></label>
-            <label>Long-lived User Access Token: <input type="text" id="fb_long_token" readonly></label>
-            <button onclick="verifyFacebook()">Verify</button>
-            <button onclick="exchangeFacebookToken()">Exchange for Long-term Token</button>
-            <button onclick="testPostFacebook()">Test Post</button>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 API Key Manager</h1>
+            <p>Securely manage and test your API credentials across multiple platforms</p>
+        </div>
+
+        <!-- Facebook Platform -->
+        <div class="platform" data-platform="facebook">
+            <div class="platform-header">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook Logo" class="platform-logo">
+                <div class="platform-info">
+                    <h2>
+                        <div class="status-indicator" id="fb-status"></div>
+                        Facebook Graph API
+                    </h2>
+                    <p class="platform-description">Manage Facebook app credentials and access tokens</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="fb_app_id">App ID</label>
+                    <input type="text" id="fb_app_id" placeholder="Enter your Facebook App ID">
+                </div>
+                <div class="form-group">
+                    <label for="fb_app_secret">App Secret</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="fb_app_secret" placeholder="Enter your App Secret">
+                        <button type="button" class="toggle-password" onclick="togglePassword('fb_app_secret')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="fb_short_token">Short-lived User Access Token</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="fb_short_token" placeholder="Enter short-lived token">
+                        <button type="button" class="toggle-password" onclick="togglePassword('fb_short_token')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="fb_long_token">Long-lived User Access Token</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="fb_long_token" placeholder="Generated automatically" readonly>
+                        <button type="button" class="toggle-password" onclick="togglePassword('fb_long_token')">👁️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="verifyFacebook()">🔍 Verify</button>
+                <button class="btn btn-warning" onclick="exchangeFacebookToken()">🔄 Exchange Token</button>
+                <button class="btn btn-success" onclick="testPostFacebook()">📝 Test Post</button>
+            </div>
+        </div>
+
+        <!-- GitHub Platform -->
+        <div class="platform" data-platform="github">
+            <div class="platform-header">
+                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo" class="platform-logo">
+                <div class="platform-info">
+                    <h2>
+                        <div class="status-indicator" id="gh-status"></div>
+                        GitHub API
+                    </h2>
+                    <p class="platform-description">Manage GitHub OAuth and Personal Access Tokens</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="gh_client_id">Client ID (OAuth App)</label>
+                    <input type="text" id="gh_client_id" placeholder="Enter GitHub Client ID">
+                </div>
+                <div class="form-group">
+                    <label for="gh_client_secret">Client Secret (OAuth App)</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="gh_client_secret" placeholder="Enter Client Secret">
+                        <button type="button" class="toggle-password" onclick="togglePassword('gh_client_secret')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="gh_pat">Personal Access Token</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="gh_pat" placeholder="ghp_...">
+                        <button type="button" class="toggle-password" onclick="togglePassword('gh_pat')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="gh_access_token">Access Token (OAuth)</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="gh_access_token" placeholder="Enter OAuth Access Token">
+                        <button type="button" class="toggle-password" onclick="togglePassword('gh_access_token')">👁️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="verifyGitHub()">🔍 Verify</button>
+                <button class="btn btn-success" onclick="testPostGitHub()">📝 Test (Create Gist)</button>
+            </div>
+        </div>
+
+        <!-- Twitter Platform -->
+        <div class="platform" data-platform="twitter">
+            <div class="platform-header">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg" alt="Twitter Logo" class="platform-logo">
+                <div class="platform-info">
+                    <h2>
+                        <div class="status-indicator" id="tw-status"></div>
+                        Twitter (X) API
+                    </h2>
+                    <p class="platform-description">Manage Twitter API v2 credentials and tokens</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="tw_client_id">Client ID</label>
+                    <input type="text" id="tw_client_id" placeholder="Enter Twitter Client ID">
+                </div>
+                <div class="form-group">
+                    <label for="tw_client_secret">Client Secret</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="tw_client_secret" placeholder="Enter Client Secret">
+                        <button type="button" class="toggle-password" onclick="togglePassword('tw_client_secret')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="tw_access_token">Access Token</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="tw_access_token" placeholder="Enter Access Token">
+                        <button type="button" class="toggle-password" onclick="togglePassword('tw_access_token')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="tw_refresh_token">Refresh Token</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="tw_refresh_token" placeholder="Enter Refresh Token">
+                        <button type="button" class="toggle-password" onclick="togglePassword('tw_refresh_token')">👁️</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="verifyTwitter()">🔍 Verify</button>
+                <button class="btn btn-warning" onclick="refreshTwitterToken()">🔄 Refresh Token</button>
+                <button class="btn btn-success" onclick="testPostTwitter()">📝 Test Post</button>
+            </div>
+        </div>
+
+        <!-- OpenAI Platform -->
+        <div class="platform" data-platform="openai">
+            <div class="platform-header">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/OpenAI_Logo.svg" alt="OpenAI Logo" class="platform-logo">
+                <div class="platform-info">
+                    <h2>
+                        <div class="status-indicator" id="oai-status"></div>
+                        OpenAI API
+                    </h2>
+                    <p class="platform-description">Manage OpenAI API credentials for GPT and other models</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="oai_api_key">API Key</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="oai_api_key" placeholder="sk-...">
+                        <button type="button" class="toggle-password" onclick="togglePassword('oai_api_key')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="oai_org_id">Organization ID (Optional)</label>
+                    <input type="text" id="oai_org_id" placeholder="org-...">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="verifyOpenAI()">🔍 Verify</button>
+                <button class="btn btn-success" onclick="testPostOpenAI()">🤖 Test Request</button>
+            </div>
+        </div>
+
+        <!-- Main Actions -->
+        <div class="main-actions">
+            <button class="btn btn-secondary" onclick="saveToCSV()">💾 Export to CSV</button>
+            <button class="btn btn-secondary" onclick="loadFromCSV()">📁 Import from CSV</button>
+            <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+            <button class="btn btn-secondary" onclick="saveToLocalStorage()">💾 Save Locally</button>
+            <button class="btn btn-secondary" onclick="loadFromLocalStorage()">📁 Load Saved</button>
+        </div>
+
+        <!-- Console Section -->
+        <div class="console-section">
+            <div class="console-header">
+                <h3>📋 Console Output</h3>
+                <div class="console-controls">
+                    <button class="btn btn-secondary" onclick="clearConsole()">🧹 Clear</button>
+                    <button class="btn btn-secondary" onclick="exportConsole()">📤 Export Log</button>
+                </div>
+            </div>
+            <div id="console"></div>
+        </div>
+
+        <!-- Resources Section -->
+        <div class="resources">
+            <h3>🔗 API Documentation &amp; Tools</h3>
+            <div class="resource-grid">
+                <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="resource-item">
+                    <h4>Facebook Graph API Explorer</h4>
+                    <p>Interactive tool to test Facebook Graph API calls and generate access tokens</p>
+                </a>
+                <a href="https://docs.github.com/en/rest" target="_blank" class="resource-item">
+                    <h4>GitHub REST API Documentation</h4>
+                    <p>Complete documentation for GitHub's REST API endpoints and authentication</p>
+                </a>
+                <a href="https://developer.twitter.com/en/docs/twitter-api" target="_blank" class="resource-item">
+                    <h4>Twitter API v2 Documentation</h4>
+                    <p>Official documentation for Twitter's latest API with examples and guides</p>
+                </a>
+                <a href="https://platform.openai.com/docs/api-reference" target="_blank" class="resource-item">
+                    <h4>OpenAI API Reference</h4>
+                    <p>Comprehensive API documentation for GPT models and other OpenAI services</p>
+                </a>
+            </div>
         </div>
     </div>
-    
-    <div id="github" class="platform">
-        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo">
-        <div class="platform-content">
-            <h2>GitHub</h2>
-            <label>Client ID (for OAuth App): <input type="text" id="gh_client_id"></label>
-            <label>Client Secret (for OAuth App): <input type="text" id="gh_client_secret"></label>
-            <label>Personal Access Token: <input type="text" id="gh_pat"></label>
-            <label>Access Token (from OAuth): <input type="text" id="gh_access_token"></label>
-            <button onclick="verifyGitHub()">Verify</button>
-            <button onclick="testPostGitHub()">Test Post (Create Gist)</button>
-        </div>
-    </div>
-    
-    <div id="twitter" class="platform">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg" alt="Twitter Logo">
-        <div class="platform-content">
-            <h2>Twitter (X)</h2>
-            <label>Client ID: <input type="text" id="tw_client_id"></label>
-            <label>Client Secret: <input type="text" id="tw_client_secret"></label>
-            <label>Access Token: <input type="text" id="tw_access_token"></label>
-            <label>Refresh Token: <input type="text" id="tw_refresh_token"></label>
-            <button onclick="verifyTwitter()">Verify</button>
-            <button onclick="refreshTwitterToken()">Refresh Token</button>
-            <button onclick="testPostTwitter()">Test Post</button>
-        </div>
-    </div>
-    
-    <div id="openai" class="platform">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/OpenAI_Logo.svg" alt="OpenAI Logo">
-        <div class="platform-content">
-            <h2>OpenAI</h2>
-            <label>API Key: <input type="text" id="oai_api_key"></label>
-            <button onclick="verifyOpenAI()">Verify</button>
-            <button onclick="testPostOpenAI()">Test Request</button>
-        </div>
-    </div>
-    
-    <button onclick="saveToCSV()">Save All to CSV</button>
-    
-    <h3>Console</h3>
-    <div id="console"></div>
-    
-    <div class="links">
-        <h3>API Explorers</h3>
-        <ul>
-            <li><a href="https://developers.facebook.com/tools/explorer/" target="_blank">Facebook Graph API Explorer</a></li>
-            <li><a href="https://docs.github.com/en/rest" target="_blank">GitHub REST API Docs</a></li>
-            <li><a href="https://developer.twitter.com/en/docs/twitter-api/tools-and-libraries/api-reference" target="_blank">Twitter (X) API Reference</a></li>
-            <li><a href="https://platform.openai.com/docs/api-reference" target="_blank">OpenAI API Reference</a></li>
-        </ul>
-    </div>
+
+    <input type="file" id="csvFileInput" class="file-input" accept=".csv" onchange="handleCSVImport(event)">
 
     <script>
-        function log(message, isError = false) {
-            const consoleDiv = document.getElementById('console');
-            const entry = document.createElement('div');
-            entry.textContent = new Date().toLocaleTimeString() + ': ' + message;
-            if (isError) entry.style.color = 'red';
-            consoleDiv.appendChild(entry);
-            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        const state = {
+            platforms: ['facebook', 'github', 'twitter', 'openai'],
+            logs: [],
+            secrets: {}
+        };
+
+        const platformFields = {
+            facebook: {
+                label: 'Facebook',
+                statusId: 'fb-status',
+                fields: [
+                    { id: 'fb_app_id', label: 'App ID' },
+                    { id: 'fb_app_secret', label: 'App Secret' },
+                    { id: 'fb_short_token', label: 'Short-lived Token' },
+                    { id: 'fb_long_token', label: 'Long-lived Token' }
+                ]
+            },
+            github: {
+                label: 'GitHub',
+                statusId: 'gh-status',
+                fields: [
+                    { id: 'gh_client_id', label: 'Client ID' },
+                    { id: 'gh_client_secret', label: 'Client Secret' },
+                    { id: 'gh_pat', label: 'Personal Access Token' },
+                    { id: 'gh_access_token', label: 'Access Token' }
+                ]
+            },
+            twitter: {
+                label: 'Twitter',
+                statusId: 'tw-status',
+                fields: [
+                    { id: 'tw_client_id', label: 'Client ID' },
+                    { id: 'tw_client_secret', label: 'Client Secret' },
+                    { id: 'tw_access_token', label: 'Access Token' },
+                    { id: 'tw_refresh_token', label: 'Refresh Token' }
+                ]
+            },
+            openai: {
+                label: 'OpenAI',
+                statusId: 'oai-status',
+                fields: [
+                    { id: 'oai_api_key', label: 'API Key' },
+                    { id: 'oai_org_id', label: 'Organization ID' }
+                ]
+            }
+        };
+
+        function updateSecret(fieldId, value) {
+            if (!fieldId) return;
+            state.secrets[fieldId] = value ?? '';
         }
 
+        function resolvePlatformConfig(identifier) {
+            if (!identifier) return null;
+            const normalized = identifier.trim().toLowerCase();
+            if (platformFields[normalized]) {
+                return platformFields[normalized];
+            }
+            return Object.values(platformFields).find(config => config.label.toLowerCase() === normalized) || null;
+        }
+
+        function resolveFieldConfig(platformConfig, fieldLabel, fieldId) {
+            if (!platformConfig) return null;
+            const normalizedLabel = fieldLabel?.trim().toLowerCase();
+            const normalizedId = fieldId?.trim().toLowerCase();
+
+            return platformConfig.fields.find(field => {
+                const byId = normalizedId && field.id.toLowerCase() === normalizedId;
+                const byLabel = normalizedLabel && field.label.toLowerCase() === normalizedLabel;
+                const byKey = normalizedLabel && field.id.toLowerCase() === normalizedLabel;
+                return byId || byLabel || byKey;
+            }) || null;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            requestAnimationFrame(() => notification.classList.add('show'));
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function log(message, type = 'info') {
+            const consoleEl = document.getElementById('console');
+            if (!consoleEl) return;
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = { timestamp, message, type, id: Date.now() + Math.random() };
+
+            if (state.logs.length >= 500) {
+                state.logs.shift();
+                if (consoleEl.firstChild) {
+                    consoleEl.removeChild(consoleEl.firstChild);
+                }
+            }
+
+            state.logs.push(logEntry);
+
+            const entryElement = document.createElement('div');
+            entryElement.className = `log-entry ${type}`;
+            entryElement.textContent = `[${timestamp}] ${message}`;
+
+            consoleEl.appendChild(entryElement);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        function updateStatus(platform, status) {
+            const config = platformFields[platform];
+            if (!config) return;
+            const indicator = document.getElementById(config.statusId);
+            if (!indicator) return;
+            indicator.className = status ? `status-indicator ${status}` : 'status-indicator';
+            indicator.setAttribute('aria-label', status ? `${config.label} status: ${status}` : `${config.label} status`);
+        }
+
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+            const button = field.nextElementSibling;
+
+            if (field.type === 'password') {
+                field.type = 'text';
+                if (button) button.textContent = '🙈';
+            } else {
+                field.type = 'password';
+                if (button) button.textContent = '👁️';
+            }
+        }
+
+        function setLoading(platform, isLoading) {
+            const platformElement = document.querySelector(`[data-platform="${platform}"]`);
+            if (!platformElement) return;
+            const buttons = platformElement.querySelectorAll('button:not(.toggle-password)');
+            buttons.forEach(button => {
+                button.disabled = isLoading;
+            });
+
+            let overlay = platformElement.querySelector('.loading-overlay');
+            if (isLoading) {
+                updateStatus(platform, 'loading');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.className = 'loading-overlay';
+                    overlay.innerHTML = '<div class="spinner"></div>';
+                    platformElement.appendChild(overlay);
+                } else {
+                    overlay.classList.remove('hidden');
+                }
+            } else if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function hasHeader(headers, name) {
+            return Object.keys(headers).some(key => key.toLowerCase() === name.toLowerCase());
+        }
+
+        async function makeRequest(url, options = {}) {
+            const { headers = {}, body, ...rest } = options;
+            const finalHeaders = { ...headers };
+            const hasContentType = hasHeader(finalHeaders, 'Content-Type');
+            let requestBody = body;
+
+            if (body && typeof body === 'object' && !(body instanceof FormData) && !(body instanceof Blob)) {
+                if (body instanceof URLSearchParams) {
+                    requestBody = body.toString();
+                    if (!hasContentType) {
+                        finalHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
+                    }
+                } else {
+                    requestBody = JSON.stringify(body);
+                    if (!hasContentType) {
+                        finalHeaders['Content-Type'] = 'application/json';
+                    }
+                }
+            } else if (typeof body === 'string' && !hasContentType) {
+                finalHeaders['Content-Type'] = 'application/json';
+            }
+
+            const fetchOptions = { ...rest, headers: finalHeaders };
+            if (requestBody !== undefined) {
+                fetchOptions.body = requestBody;
+            }
+
+            try {
+                const response = await fetch(url, fetchOptions);
+                const contentType = response.headers.get('content-type') || '';
+                const isJson = contentType.includes('application/json');
+                const text = await response.text();
+
+                if (!response.ok) {
+                    let errorMessage = `HTTP ${response.status}`;
+                    if (isJson && text) {
+                        try {
+                            const errorData = JSON.parse(text);
+                            errorMessage = errorData.error?.message || errorData.message || errorMessage;
+                        } catch (parseError) {
+                            errorMessage = `${errorMessage}: ${text}`;
+                        }
+                    } else if (text) {
+                        errorMessage = `${errorMessage}: ${text}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                if (!text) {
+                    return {};
+                }
+
+                if (isJson) {
+                    try {
+                        return JSON.parse(text);
+                    } catch (parseError) {
+                        return {};
+                    }
+                }
+
+                return text;
+            } catch (error) {
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    throw new Error('Network error - check your internet connection or CORS policy');
+                }
+                throw error;
+            }
+        }
+
+        function getFieldValue(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                const value = element.value ?? '';
+                updateSecret(id, value);
+                return value;
+            }
+            return state.secrets[id] ?? '';
+        }
+
+        function setFieldValue(id, value) {
+            const element = document.getElementById(id);
+            const safeValue = value ?? '';
+            if (element) {
+                element.value = safeValue;
+            }
+            updateSecret(id, safeValue);
+        }
+
+        function escapeCSVValue(value) {
+            if (value === null || value === undefined) {
+                return '""';
+            }
+            const safeValue = String(value).replace(/"/g, '""');
+            return `"${safeValue}"`;
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+
+            result.push(current);
+
+            return result.map(value => {
+                let cleaned = value.trim();
+                if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+                    cleaned = cleaned.slice(1, -1).replace(/""/g, '"');
+                }
+                return cleaned;
+            });
+        }
+
+        function parseCSV(content) {
+            const lines = content.split(/\r?\n/);
+            const rows = [];
+            lines.forEach(line => {
+                if (line.trim().length === 0) return;
+                rows.push(parseCSVLine(line));
+            });
+            return rows;
+        }
+
+        function applyCSVRows(rows) {
+            if (!rows.length) return;
+
+            let startIndex = 0;
+            const columnIndexes = {
+                platform: 0,
+                fieldLabel: 1,
+                fieldId: null,
+                value: 2
+            };
+
+            const header = rows[0].map(value => value.trim().toLowerCase());
+            const headerMap = new Map();
+            header.forEach((col, index) => {
+                if (col) {
+                    headerMap.set(col, index);
+                }
+            });
+
+            if (headerMap.has('platform')) {
+                startIndex = 1;
+                columnIndexes.platform = headerMap.get('platform');
+
+                const labelIndex = ['field', 'field name', 'field label'].map(name => headerMap.get(name)).find(index => index !== undefined);
+                if (labelIndex !== undefined) {
+                    columnIndexes.fieldLabel = labelIndex;
+                }
+
+                const fieldIdIndex = ['field id', 'field_id', 'id'].map(name => headerMap.get(name)).find(index => index !== undefined);
+                if (fieldIdIndex !== undefined) {
+                    columnIndexes.fieldId = fieldIdIndex;
+                }
+
+                const valueIndex = ['value', 'secret', 'credential'].map(name => headerMap.get(name)).find(index => index !== undefined);
+                if (valueIndex !== undefined) {
+                    columnIndexes.value = valueIndex;
+                }
+            }
+
+            for (let i = startIndex; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || !row.length) continue;
+
+                const platformIdentifier = row[columnIndexes.platform] ?? '';
+                const fieldLabel = row[columnIndexes.fieldLabel] ?? '';
+                const fieldId = columnIndexes.fieldId !== null ? row[columnIndexes.fieldId] : '';
+                const value = columnIndexes.value !== null && columnIndexes.value !== undefined ? row[columnIndexes.value] : row[2];
+
+                if (!platformIdentifier || (!fieldLabel && !fieldId)) continue;
+
+                const platformConfig = resolvePlatformConfig(platformIdentifier);
+                if (!platformConfig) continue;
+
+                const fieldConfig = resolveFieldConfig(platformConfig, fieldLabel, fieldId);
+                if (!fieldConfig) continue;
+
+                setFieldValue(fieldConfig.id, value ?? '');
+            }
+        }
+
+        function registerSecretListeners() {
+            Object.values(platformFields).forEach(config => {
+                config.fields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (!element) return;
+                    updateSecret(field.id, element.value ?? '');
+                    element.addEventListener('input', event => {
+                        updateSecret(field.id, event.target.value ?? '');
+                    });
+                });
+            });
+        }
         async function verifyFacebook() {
-            const appId = document.getElementById('fb_app_id').value;
-            const token = document.getElementById('fb_long_token').value || document.getElementById('fb_short_token').value;
+            const appId = getFieldValue('fb_app_id').trim();
+            const longToken = getFieldValue('fb_long_token').trim();
+            const shortToken = getFieldValue('fb_short_token').trim();
+            const token = longToken || shortToken;
+
             if (!appId || !token) {
-                log('Missing App ID or Token for Facebook', true);
+                log('❌ Missing App ID or token for Facebook verification', 'error');
+                showNotification('Missing Facebook credentials', 'error');
+                updateStatus('facebook', 'error');
                 return;
             }
+
+            setLoading('facebook', true);
+            log('🔍 Verifying Facebook credentials...', 'info');
+
             try {
-                const meResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${token}`);
-                if (!meResponse.ok) throw new Error('Failed to fetch /me: ' + (await meResponse.text()));
-                log('Facebook read access verified (fetched /me successfully)');
-                log('Facebook verification successful (read access confirmed; write assumes permissions)');
+                const data = await makeRequest(`https://graph.facebook.com/v20.0/me?access_token=${encodeURIComponent(token)}`);
+                const name = data.name || data.id || 'unknown user';
+                log(`✅ Facebook verification successful for ${name}`, 'success');
+                showNotification('Facebook credentials verified', 'success');
+                updateStatus('facebook', 'verified');
             } catch (error) {
-                log('Facebook verification failed: ' + error.message, true);
+                log(`❌ Facebook verification failed: ${error.message}`, 'error');
+                showNotification(`Facebook verification failed: ${error.message}`, 'error');
+                updateStatus('facebook', 'error');
+            } finally {
+                setLoading('facebook', false);
             }
         }
 
         async function exchangeFacebookToken() {
-            const appId = document.getElementById('fb_app_id').value;
-            const appSecret = document.getElementById('fb_app_secret').value;
-            const shortToken = document.getElementById('fb_short_token').value;
+            const appId = getFieldValue('fb_app_id').trim();
+            const appSecret = getFieldValue('fb_app_secret').trim();
+            const shortToken = getFieldValue('fb_short_token').trim();
+
             if (!appId || !appSecret || !shortToken) {
-                log('Missing fields for Facebook token exchange', true);
+                log('❌ Missing fields for Facebook token exchange', 'error');
+                showNotification('Provide App ID, App Secret, and short-lived token', 'error');
+                updateStatus('facebook', 'error');
                 return;
             }
+
+            setLoading('facebook', true);
+            log('🔄 Exchanging Facebook short-lived token for a long-lived token...', 'info');
+
+            const url = `https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${encodeURIComponent(appId)}&client_secret=${encodeURIComponent(appSecret)}&fb_exchange_token=${encodeURIComponent(shortToken)}`;
+
             try {
-                const response = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-                document.getElementById('fb_long_token').value = data.access_token;
-                log('Facebook long-term token obtained successfully');
+                const data = await makeRequest(url);
+                if (data.access_token) {
+                    setFieldValue('fb_long_token', data.access_token);
+                    log('✅ Facebook long-lived token obtained successfully', 'success');
+                    showNotification('Long-lived token generated', 'success');
+                    updateStatus('facebook', 'verified');
+                } else {
+                    throw new Error('No access token returned from Facebook');
+                }
             } catch (error) {
-                log('Facebook token exchange failed: ' + error.message, true);
+                log(`❌ Facebook token exchange failed: ${error.message}`, 'error');
+                showNotification(`Token exchange failed: ${error.message}`, 'error');
+                updateStatus('facebook', 'error');
+            } finally {
+                setLoading('facebook', false);
             }
         }
 
         async function testPostFacebook() {
-            const token = document.getElementById('fb_long_token').value || document.getElementById('fb_short_token').value;
+            const longToken = getFieldValue('fb_long_token').trim();
+            const shortToken = getFieldValue('fb_short_token').trim();
+            const token = longToken || shortToken;
+
             if (!token) {
-                log('Missing Token for Facebook test post', true);
+                log('❌ Missing token for Facebook test post', 'error');
+                showNotification('Provide a Facebook access token to test posting', 'error');
+                updateStatus('facebook', 'error');
                 return;
             }
+
+            setLoading('facebook', true);
+            log('📝 Sending Facebook test post...', 'info');
+
             try {
-                const response = await fetch(`https://graph.facebook.com/v20.0/me/feed?access_token=${token}`, {
+                const body = JSON.stringify({ message: `Test post from API Key Manager at ${new Date().toISOString()}` });
+                const data = await makeRequest(`https://graph.facebook.com/v20.0/me/feed?access_token=${encodeURIComponent(token)}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: 'Test post from API Key Manager' })
+                    body
                 });
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-                log('Facebook test post successful: Post ID ' + data.id);
+
+                if (data.id) {
+                    log(`✅ Facebook test post successful (Post ID: ${data.id})`, 'success');
+                    showNotification('Facebook test post created', 'success');
+                    updateStatus('facebook', 'verified');
+                } else {
+                    throw new Error('Facebook did not return a post ID');
+                }
             } catch (error) {
-                log('Facebook test post failed: ' + error.message, true);
+                log(`❌ Facebook test post failed: ${error.message}`, 'error');
+                showNotification(`Facebook test post failed: ${error.message}`, 'error');
+                updateStatus('facebook', 'error');
+            } finally {
+                setLoading('facebook', false);
             }
         }
 
         async function verifyGitHub() {
-            const pat = document.getElementById('gh_pat').value;
-            const accessToken = document.getElementById('gh_access_token').value;
+            const pat = getFieldValue('gh_pat').trim();
+            const accessToken = getFieldValue('gh_access_token').trim();
             const token = pat || accessToken;
+
             if (!token) {
-                log('Missing token for GitHub', true);
+                log('❌ Missing GitHub token for verification', 'error');
+                showNotification('Provide a GitHub token to verify', 'error');
+                updateStatus('github', 'error');
                 return;
             }
+
+            setLoading('github', true);
+            log('🔍 Verifying GitHub credentials...', 'info');
+
             try {
-                const response = await fetch('https://api.github.com/user', {
-                    headers: { 'Authorization': `token ${token}` }
+                const user = await makeRequest('https://api.github.com/user', {
+                    headers: { Authorization: `token ${token}` }
                 });
-                if (!response.ok) throw new Error('Failed to fetch user: ' + (await response.text()));
-                log('GitHub read access verified (fetched user successfully)');
-                log('GitHub verification successful (read access confirmed; write assumes scopes)');
+
+                const login = user.login || 'unknown user';
+                log(`✅ GitHub verification successful for ${login}`, 'success');
+                showNotification('GitHub credentials verified', 'success');
+                updateStatus('github', 'verified');
             } catch (error) {
-                log('GitHub verification failed: ' + error.message, true);
+                log(`❌ GitHub verification failed: ${error.message}`, 'error');
+                showNotification(`GitHub verification failed: ${error.message}`, 'error');
+                updateStatus('github', 'error');
+            } finally {
+                setLoading('github', false);
             }
         }
 
         async function testPostGitHub() {
-            const pat = document.getElementById('gh_pat').value;
-            const accessToken = document.getElementById('gh_access_token').value;
+            const pat = getFieldValue('gh_pat').trim();
+            const accessToken = getFieldValue('gh_access_token').trim();
             const token = pat || accessToken;
+
             if (!token) {
-                log('Missing token for GitHub test post', true);
+                log('❌ Missing GitHub token for gist creation', 'error');
+                showNotification('Provide a GitHub token to create a test gist', 'error');
+                updateStatus('github', 'error');
                 return;
             }
+
+            setLoading('github', true);
+            log('📝 Creating GitHub test gist...', 'info');
+
             try {
-                const response = await fetch('https://api.github.com/gists', {
+                const gistBody = {
+                    description: 'Test gist from API Key Manager',
+                    public: false,
+                    files: {
+                        'api-key-manager-test.txt': {
+                            content: `Test gist generated at ${new Date().toISOString()}`
+                        }
+                    }
+                };
+
+                const data = await makeRequest('https://api.github.com/gists', {
                     method: 'POST',
-                    headers: { 
-                        'Authorization': `token ${token}`,
+                    headers: {
+                        Authorization: `token ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        description: 'Test gist from API Key Manager',
-                        public: false,
-                        files: { 'test.txt': { content: 'Test content' } }
-                    })
+                    body: JSON.stringify(gistBody)
                 });
-                if (!response.ok) throw new Error('Failed to create gist: ' + (await response.text()));
-                const data = await response.json();
-                log('GitHub test post (gist) successful: Gist URL ' + data.html_url);
+
+                if (data.html_url) {
+                    log(`✅ GitHub test gist created: ${data.html_url}`, 'success');
+                    showNotification('GitHub test gist created', 'success');
+                    updateStatus('github', 'verified');
+                } else {
+                    throw new Error('GitHub did not return a gist URL');
+                }
             } catch (error) {
-                log('GitHub test post failed: ' + error.message, true);
+                log(`❌ GitHub test gist failed: ${error.message}`, 'error');
+                showNotification(`GitHub gist creation failed: ${error.message}`, 'error');
+                updateStatus('github', 'error');
+            } finally {
+                setLoading('github', false);
             }
         }
 
         async function verifyTwitter() {
-            const accessToken = document.getElementById('tw_access_token').value;
-            if (!accessToken) {
-                log('Missing access token for Twitter', true);
+            const token = getFieldValue('tw_access_token').trim();
+
+            if (!token) {
+                log('❌ Missing access token for Twitter verification', 'error');
+                showNotification('Provide a Twitter access token to verify', 'error');
+                updateStatus('twitter', 'error');
                 return;
             }
+
+            setLoading('twitter', true);
+            log('🔍 Verifying Twitter credentials...', 'info');
+
             try {
-                const response = await fetch('https://api.twitter.com/2/users/me', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                const data = await makeRequest('https://api.twitter.com/2/users/me', {
+                    headers: { Authorization: `Bearer ${token}` }
                 });
-                if (!response.ok) throw new Error('Failed to fetch /users/me: ' + (await response.text()));
-                log('Twitter read access verified (fetched /users/me successfully)');
-                log('Twitter verification successful (read access confirmed; write assumes permissions)');
+
+                const userData = data.data || {};
+                const displayName = userData.username || userData.name || userData.id || 'your account';
+                log(`✅ Twitter verification successful for ${displayName}`, 'success');
+                showNotification('Twitter credentials verified', 'success');
+                updateStatus('twitter', 'verified');
             } catch (error) {
-                log('Twitter verification failed: ' + error.message, true);
+                log(`❌ Twitter verification failed: ${error.message}`, 'error');
+                showNotification(`Twitter verification failed: ${error.message}`, 'error');
+                updateStatus('twitter', 'error');
+            } finally {
+                setLoading('twitter', false);
             }
         }
 
         async function refreshTwitterToken() {
-            const clientId = document.getElementById('tw_client_id').value;
-            const clientSecret = document.getElementById('tw_client_secret').value;
-            const refreshToken = document.getElementById('tw_refresh_token').value;
+            const clientId = getFieldValue('tw_client_id').trim();
+            const clientSecret = getFieldValue('tw_client_secret').trim();
+            const refreshToken = getFieldValue('tw_refresh_token').trim();
+
             if (!clientId || !clientSecret || !refreshToken) {
-                log('Missing fields for Twitter token refresh', true);
+                log('❌ Missing fields for Twitter token refresh', 'error');
+                showNotification('Provide client ID, secret, and refresh token', 'error');
+                updateStatus('twitter', 'error');
                 return;
             }
+
+            setLoading('twitter', true);
+            log('🔄 Refreshing Twitter access token...', 'info');
+
             try {
                 const auth = btoa(`${clientId}:${clientSecret}`);
-                const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+                const body = new URLSearchParams({
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken
+                }).toString();
+
+                const data = await makeRequest('https://api.twitter.com/2/oauth2/token', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Basic ${auth}`,
+                        Authorization: `Basic ${auth}`,
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
-                    body: `grant_type=refresh_token&refresh_token=${refreshToken}`
+                    body
                 });
-                const data = await response.json();
-                if (data.error) throw new Error(data.error + ': ' + data.error_description);
-                document.getElementById('tw_access_token').value = data.access_token;
-                document.getElementById('tw_refresh_token').value = data.refresh_token || refreshToken;
-                log('Twitter token refreshed successfully');
+
+                if (data.access_token) {
+                    setFieldValue('tw_access_token', data.access_token);
+                    if (data.refresh_token) {
+                        setFieldValue('tw_refresh_token', data.refresh_token);
+                    }
+                    log('✅ Twitter access token refreshed successfully', 'success');
+                    showNotification('Twitter token refreshed', 'success');
+                    updateStatus('twitter', 'verified');
+                } else {
+                    throw new Error('Twitter did not return a new access token');
+                }
             } catch (error) {
-                log('Twitter token refresh failed: ' + error.message, true);
+                log(`❌ Twitter token refresh failed: ${error.message}`, 'error');
+                showNotification(`Twitter token refresh failed: ${error.message}`, 'error');
+                updateStatus('twitter', 'error');
+            } finally {
+                setLoading('twitter', false);
             }
         }
 
         async function testPostTwitter() {
-            const accessToken = document.getElementById('tw_access_token').value;
-            if (!accessToken) {
-                log('Missing access token for Twitter test post', true);
+            const token = getFieldValue('tw_access_token').trim();
+
+            if (!token) {
+                log('❌ Missing access token for Twitter test post', 'error');
+                showNotification('Provide a Twitter access token to create a test post', 'error');
+                updateStatus('twitter', 'error');
                 return;
             }
+
+            setLoading('twitter', true);
+            log('📝 Creating Twitter test tweet...', 'info');
+
             try {
-                const response = await fetch('https://api.twitter.com/2/tweets', {
+                const payload = {
+                    text: `Test post from API Key Manager at ${new Date().toISOString()}`
+                };
+
+                const data = await makeRequest('https://api.twitter.com/2/tweets', {
                     method: 'POST',
-                    headers: { 
-                        'Authorization': `Bearer ${accessToken}`,
+                    headers: {
+                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ text: 'Test post from API Key Manager' })
+                    body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error('Failed to post tweet: ' + (await response.text()));
-                const data = await response.json();
-                log('Twitter test post successful: Tweet ID ' + data.data.id);
+
+                const tweetId = data.data?.id;
+                if (tweetId) {
+                    log(`✅ Twitter test post successful (Tweet ID: ${tweetId})`, 'success');
+                    showNotification('Twitter test tweet posted', 'success');
+                    updateStatus('twitter', 'verified');
+                } else {
+                    throw new Error('Twitter did not return a tweet ID');
+                }
             } catch (error) {
-                log('Twitter test post failed: ' + error.message, true);
+                log(`❌ Twitter test post failed: ${error.message}`, 'error');
+                showNotification(`Twitter test post failed: ${error.message}`, 'error');
+                updateStatus('twitter', 'error');
+            } finally {
+                setLoading('twitter', false);
             }
         }
 
         async function verifyOpenAI() {
-            const apiKey = document.getElementById('oai_api_key').value;
+            const apiKey = getFieldValue('oai_api_key').trim();
+            const orgId = getFieldValue('oai_org_id').trim();
+
             if (!apiKey) {
-                log('Missing API key for OpenAI', true);
+                log('❌ Missing API key for OpenAI verification', 'error');
+                showNotification('Provide an OpenAI API key to verify', 'error');
+                updateStatus('openai', 'error');
                 return;
             }
+
+            setLoading('openai', true);
+            log('🔍 Verifying OpenAI credentials...', 'info');
+
             try {
-                const response = await fetch('https://api.openai.com/v1/models', {
-                    headers: { 'Authorization': `Bearer ${apiKey}` }
-                });
-                if (!response.ok) throw new Error('Failed to fetch models: ' + (await response.text()));
-                log('OpenAI read access verified (fetched models successfully)');
-                log('OpenAI verification successful (access confirmed)');
+                const headers = { Authorization: `Bearer ${apiKey}` };
+                if (orgId) {
+                    headers['OpenAI-Organization'] = orgId;
+                }
+
+                const data = await makeRequest('https://api.openai.com/v1/models', { headers });
+                const modelCount = Array.isArray(data.data) ? data.data.length : 0;
+                log(`✅ OpenAI verification successful (models available: ${modelCount})`, 'success');
+                showNotification('OpenAI credentials verified', 'success');
+                updateStatus('openai', 'verified');
             } catch (error) {
-                log('OpenAI verification failed: ' + error.message, true);
+                log(`❌ OpenAI verification failed: ${error.message}`, 'error');
+                showNotification(`OpenAI verification failed: ${error.message}`, 'error');
+                updateStatus('openai', 'error');
+            } finally {
+                setLoading('openai', false);
             }
         }
 
         async function testPostOpenAI() {
-            const apiKey = document.getElementById('oai_api_key').value;
+            const apiKey = getFieldValue('oai_api_key').trim();
+            const orgId = getFieldValue('oai_org_id').trim();
+
             if (!apiKey) {
-                log('Missing API key for OpenAI test request', true);
+                log('❌ Missing API key for OpenAI test request', 'error');
+                showNotification('Provide an OpenAI API key to run a test request', 'error');
+                updateStatus('openai', 'error');
                 return;
             }
+
+            setLoading('openai', true);
+            log('🤖 Sending OpenAI test completion request...', 'info');
+
             try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                const headers = {
+                    Authorization: `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                };
+                if (orgId) {
+                    headers['OpenAI-Organization'] = orgId;
+                }
+
+                const payload = {
+                    model: 'gpt-3.5-turbo',
+                    messages: [
+                        { role: 'system', content: 'You are a helpful assistant performing diagnostics.' },
+                        { role: 'user', content: 'Reply with a short confirmation that this is a test.' }
+                    ],
+                    max_tokens: 30,
+                    temperature: 0.2
+                };
+
+                const data = await makeRequest('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',
-                    headers: { 
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-3.5-turbo',
-                        messages: [{ role: 'user', content: 'Say this is a test' }]
-                    })
+                    headers,
+                    body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error('Failed to get completion: ' + (await response.text()));
-                log('OpenAI test request successful');
+
+                const reply = data.choices?.[0]?.message?.content?.trim();
+                log(`✅ OpenAI test request successful${reply ? ` - Response: ${reply}` : ''}`, 'success');
+                showNotification('OpenAI test request succeeded', 'success');
+                updateStatus('openai', 'verified');
             } catch (error) {
-                log('OpenAI test request failed: ' + error.message, true);
+                log(`❌ OpenAI test request failed: ${error.message}`, 'error');
+                showNotification(`OpenAI test request failed: ${error.message}`, 'error');
+                updateStatus('openai', 'error');
+            } finally {
+                setLoading('openai', false);
             }
         }
-
         function saveToCSV() {
-            const data = [];
-            data.push(['Platform', 'Type', 'Value']);
-            
-            // Facebook
-            data.push(['Facebook', 'App ID', document.getElementById('fb_app_id').value]);
-            data.push(['Facebook', 'App Secret', document.getElementById('fb_app_secret').value]);
-            data.push(['Facebook', 'Short-lived Token', document.getElementById('fb_short_token').value]);
-            data.push(['Facebook', 'Long-lived Token', document.getElementById('fb_long_token').value]);
-            
-            // GitHub
-            data.push(['GitHub', 'Client ID', document.getElementById('gh_client_id').value]);
-            data.push(['GitHub', 'Client Secret', document.getElementById('gh_client_secret').value]);
-            data.push(['GitHub', 'Personal Access Token', document.getElementById('gh_pat').value]);
-            data.push(['GitHub', 'Access Token', document.getElementById('gh_access_token').value]);
-            
-            // Twitter
-            data.push(['Twitter', 'Client ID', document.getElementById('tw_client_id').value]);
-            data.push(['Twitter', 'Client Secret', document.getElementById('tw_client_secret').value]);
-            data.push(['Twitter', 'Access Token', document.getElementById('tw_access_token').value]);
-            data.push(['Twitter', 'Refresh Token', document.getElementById('tw_refresh_token').value]);
-            
-            // OpenAI
-            data.push(['OpenAI', 'API Key', document.getElementById('oai_api_key').value]);
-            
-            const csvContent = data.map(row => row.join(',')).join('\n');
+            const rows = [['Platform', 'Field', 'Field ID', 'Value']];
+            state.platforms.forEach(platform => {
+                const config = platformFields[platform];
+                if (!config) return;
+                config.fields.forEach(field => {
+                    rows.push([config.label, field.label, field.id, getFieldValue(field.id)]);
+                });
+            });
+
+            const csvContent = rows.map(row => row.map(escapeCSVValue).join(',')).join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'api_keys.csv');
+            link.href = url;
+            link.download = `api-credentials-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            log('Saved to CSV successfully');
+            URL.revokeObjectURL(url);
+
+            log('💾 Exported credentials to CSV', 'success');
+            showNotification('Credentials exported to CSV', 'success');
         }
+
+        function loadFromCSV() {
+            const input = document.getElementById('csvFileInput');
+            if (!input) {
+                showNotification('CSV import element not found', 'error');
+                return;
+            }
+            input.click();
+        }
+
+        function handleCSVImport(event) {
+            const input = event.target;
+            const file = input.files && input.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const text = e.target?.result || '';
+                    const rows = parseCSV(text);
+                    applyCSVRows(rows);
+                    state.platforms.forEach(platform => updateStatus(platform, ''));
+                    log('📁 Imported credentials from CSV', 'success');
+                    showNotification('Credentials imported from CSV', 'success');
+                } catch (error) {
+                    log(`❌ CSV import failed: ${error.message}`, 'error');
+                    showNotification(`CSV import failed: ${error.message}`, 'error');
+                }
+                input.value = '';
+            };
+            reader.onerror = () => {
+                log(`❌ CSV import failed: ${reader.error?.message || 'Unknown error'}`, 'error');
+                showNotification('CSV import failed', 'error');
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAll() {
+            state.platforms.forEach(platform => {
+                const config = platformFields[platform];
+                if (!config) return;
+                config.fields.forEach(field => setFieldValue(field.id, ''));
+                updateStatus(platform, '');
+                const platformElement = document.querySelector(`[data-platform="${platform}"]`);
+                if (platformElement) {
+                    const buttons = platformElement.querySelectorAll('button:not(.toggle-password)');
+                    buttons.forEach(button => button.disabled = false);
+                    const overlay = platformElement.querySelector('.loading-overlay');
+                    if (overlay) {
+                        overlay.classList.add('hidden');
+                    }
+                }
+            });
+
+            log('🧹 Cleared all stored credentials', 'warning');
+            showNotification('All fields cleared', 'warning');
+        }
+
+        function saveToLocalStorage() {
+            try {
+                const payload = {};
+                state.platforms.forEach(platform => {
+                    const config = platformFields[platform];
+                    if (!config) return;
+                    config.fields.forEach(field => {
+                        payload[field.id] = getFieldValue(field.id);
+                    });
+                });
+                localStorage.setItem('apiKeyManagerData', JSON.stringify(payload));
+                log('💾 Saved credentials to local storage', 'success');
+                showNotification('Credentials saved locally', 'success');
+            } catch (error) {
+                log(`❌ Failed to save to local storage: ${error.message}`, 'error');
+                showNotification('Failed to save locally', 'error');
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const stored = localStorage.getItem('apiKeyManagerData');
+                if (!stored) {
+                    showNotification('No saved credentials found', 'warning');
+                    log('⚠️ No saved credentials found in local storage', 'warning');
+                    return;
+                }
+                const data = JSON.parse(stored);
+                Object.keys(data).forEach(id => setFieldValue(id, data[id]));
+                state.platforms.forEach(platform => updateStatus(platform, ''));
+                log('📁 Loaded credentials from local storage', 'success');
+                showNotification('Loaded saved credentials', 'success');
+            } catch (error) {
+                log(`❌ Failed to load from local storage: ${error.message}`, 'error');
+                showNotification('Failed to load saved credentials', 'error');
+            }
+        }
+
+        function clearConsole() {
+            state.logs = [];
+            const consoleEl = document.getElementById('console');
+            if (consoleEl) {
+                consoleEl.innerHTML = '';
+            }
+            showNotification('Console cleared', 'warning');
+        }
+
+        function exportConsole() {
+            if (!state.logs.length) {
+                showNotification('No console entries to export', 'warning');
+                return;
+            }
+
+            const lines = state.logs.map(entry => `[${entry.timestamp}] (${entry.type.toUpperCase()}) ${entry.message}`);
+            const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `api-key-manager-log-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            log('📤 Exported console log', 'success');
+            showNotification('Console log exported', 'success');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            registerSecretListeners();
+            log('🚀 Ready to manage API credentials. Remember to keep secrets safe!', 'info');
+        });
     </script>
 </body>
 </html>
