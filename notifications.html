@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications Hub • Loki Launcher</title>
+    <meta name="description" content="Review cross-platform notifications for Facebook, GitHub, Twitter (X), and OpenAI posts with a built-in cooldown timer.">
+    <style>
+        :root {
+            --bg: #eff3f8;
+            --card-bg: #ffffff;
+            --text: #1f2933;
+            --muted: #556070;
+            --border: #d6dde8;
+            --accent: #2c5282;
+            --accent-strong: #1a365d;
+            --success: #2f855a;
+            --error: #c53030;
+            --info: #3a6ea5;
+            --warning: #b7791f;
+            --console-bg: #111827;
+            --console-border: #1f2937;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-card: 0 18px 34px -24px rgba(15, 23, 42, 0.28);
+            --shadow-button: 0 12px 28px -18px rgba(44, 82, 130, 0.4);
+            --shadow-button-hover: 0 18px 36px -18px rgba(26, 54, 93, 0.46);
+            --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-sans);
+            color: var(--text);
+            background: radial-gradient(circle at top left, rgba(44, 82, 130, 0.08), rgba(26, 54, 93, 0.04) 55%), var(--bg);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        a {
+            color: var(--accent-strong);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        h1, h2, h3, h4 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .page-header {
+            padding: 3rem 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(44, 82, 130, 0.16), rgba(26, 54, 93, 0.1));
+        }
+
+        .page-header__content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+            position: relative;
+        }
+
+        .page-header__top {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .page-header__top .page-nav {
+            margin-left: auto;
+        }
+
+        .app-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.55);
+            box-shadow: 0 18px 35px -22px rgba(15, 23, 42, 0.45);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .app-logo:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 22px 45px -20px rgba(44, 82, 130, 0.32);
+            text-decoration: none;
+        }
+
+        .app-logo__mark {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            background: rgba(15, 23, 42, 0.92);
+        }
+
+        .app-logo__mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .app-logo__text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .app-logo__title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent-strong);
+        }
+
+        .app-logo__subtitle {
+            font-size: 0.72rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .page-header__title {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+        }
+
+        .page-header__subtitle {
+            margin: 0 auto;
+            max-width: 660px;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .page-nav {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            padding: 0.45rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid rgba(44, 82, 130, 0.18);
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(6px);
+        }
+
+        .page-nav__link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.45rem 1rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--accent-strong);
+            transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        .page-nav__link:hover {
+            background: rgba(44, 82, 130, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .page-nav__link.is-active {
+            background: linear-gradient(135deg, rgba(44, 82, 130, 0.18), rgba(26, 54, 93, 0.22));
+            color: var(--accent-strong);
+            box-shadow: 0 10px 24px -18px rgba(44, 82, 130, 0.35);
+        }
+
+        .page-nav__link:focus-visible {
+            outline: 3px solid rgba(44, 82, 130, 0.28);
+            outline-offset: 2px;
+        }
+
+        .page-layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2.25rem 1.5rem 3rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1100px) {
+            .page-layout {
+                grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr);
+                align-items: start;
+            }
+        }
+
+        .activity-grid {
+            display: grid;
+            gap: 1.75rem;
+        }
+
+        @media (min-width: 1024px) {
+            .activity-grid {
+                grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            }
+        }
+
+        .activity-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.6rem;
+        }
+
+        .activity-card__header {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .activity-card__left {
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+            flex: 1 1 240px;
+        }
+
+        .activity-card__logo {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-md);
+            background: rgba(44, 82, 130, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .activity-card__logo img {
+            max-width: 36px;
+            max-height: 36px;
+        }
+
+        .activity-card__title {
+            font-size: 1.35rem;
+        }
+
+        .activity-card__summary {
+            margin: 0.35rem 0 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .activity-card__body {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .latest-post {
+            background: linear-gradient(135deg, rgba(44, 82, 130, 0.12), rgba(26, 54, 93, 0.1));
+            border-radius: var(--radius-lg);
+            padding: 1.35rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            text-align: left;
+        }
+
+        .latest-post__meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.85rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .latest-post__title {
+            font-size: 1.18rem;
+            font-weight: 700;
+        }
+
+        .latest-post__excerpt {
+            margin: 0;
+            color: rgba(15, 23, 42, 0.82);
+        }
+
+        .latest-post__stats {
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            margin: 0;
+        }
+
+        .latest-post__stats div {
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: var(--radius-md);
+            padding: 0.6rem 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .latest-post__stats dt {
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .latest-post__stats dd {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .section-title {
+            font-size: 1.05rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .activity-groups__grid {
+            display: grid;
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .activity-groups__grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            }
+        }
+
+        .activity-group {
+            border: 1px solid rgba(213, 219, 230, 0.8);
+            border-radius: var(--radius-md);
+            padding: 0.9rem 1rem;
+            background: rgba(248, 250, 252, 0.75);
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+        }
+
+        .activity-group__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+        }
+
+        .activity-group__title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .activity-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .activity-list__item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .activity-list__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .activity-list__author {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .activity-list__context {
+            padding: 0.1rem 0.4rem;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.18);
+            font-size: 0.72rem;
+        }
+
+        .activity-list__time {
+            margin-left: auto;
+        }
+
+        .activity-list__message {
+            margin: 0;
+            font-size: 0.92rem;
+            color: rgba(15, 23, 42, 0.88);
+        }
+
+        .activity-list__empty {
+            font-size: 0.86rem;
+            color: var(--muted);
+        }
+
+        .timeline {
+            border: 1px solid rgba(213, 219, 230, 0.78);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.2rem;
+            background: rgba(243, 245, 248, 0.75);
+        }
+
+        .timeline__list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .timeline__item {
+            position: relative;
+            padding-left: 1.75rem;
+        }
+
+        .timeline__item::before {
+            content: '';
+            position: absolute;
+            left: 0.35rem;
+            top: 0.2rem;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(44, 82, 130, 0.88), rgba(26, 54, 93, 0.85));
+            box-shadow: 0 0 0 4px rgba(44, 82, 130, 0.18);
+        }
+
+        .timeline__item + .timeline__item::after {
+            content: '';
+            position: absolute;
+            left: 0.71rem;
+            top: -1.4rem;
+            width: 2px;
+            height: 1.4rem;
+            background: rgba(148, 163, 184, 0.35);
+        }
+
+        .timeline__label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent-strong);
+        }
+
+        .timeline__message {
+            margin: 0.15rem 0 0.35rem;
+            font-size: 0.95rem;
+        }
+
+        .timeline__time {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .cooldown-card,
+        .activity-log-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+        }
+
+        .cooldown-card h2,
+        .activity-log-card h2 {
+            font-size: 1.2rem;
+        }
+
+        .cooldown-control {
+            margin: 1rem 0 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .cooldown-control__row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .cooldown-control__value {
+            font-weight: 600;
+            color: var(--accent-strong);
+        }
+
+        .cooldown-control input[type="range"] {
+            accent-color: var(--accent-strong);
+        }
+
+        .cooldown-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.6rem 0.85rem;
+            border-radius: var(--radius-md);
+            background: rgba(44, 82, 130, 0.08);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .cooldown-status strong {
+            font-size: 1rem;
+            color: var(--accent-strong);
+        }
+
+        .activity-log-card__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .console-log {
+            height: 320px;
+            overflow-y: auto;
+            background: var(--console-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--console-border);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            font-family: var(--font-mono);
+            color: #e2e8f0;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            border-left: 3px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 0.55rem 0.7rem;
+            background: rgba(148, 163, 184, 0.14);
+            font-size: 0.86rem;
+        }
+
+        .log-entry__time {
+            color: rgba(226, 232, 240, 0.65);
+            font-variant-numeric: tabular-nums;
+            min-width: 72px;
+        }
+
+        .log-entry__message {
+            flex: 1;
+        }
+
+        .log-entry--success {
+            border-left-color: rgba(21, 128, 61, 0.9);
+            background: rgba(21, 128, 61, 0.18);
+            color: #bbf7d0;
+        }
+
+        .log-entry--error {
+            border-left-color: rgba(220, 38, 38, 0.95);
+            background: rgba(220, 38, 38, 0.18);
+            color: #fecaca;
+        }
+
+        .log-entry--info {
+            border-left-color: rgba(62, 99, 141, 0.82);
+            background: rgba(62, 99, 141, 0.18);
+            color: #bae6fd;
+        }
+
+        .log-entry--warn {
+            border-left-color: rgba(249, 115, 22, 0.9);
+            background: rgba(249, 115, 22, 0.18);
+            color: #fed7aa;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+            padding: 0.6rem 1.05rem;
+        }
+
+        .button--primary {
+            background: linear-gradient(135deg, #2c5282, #1a365d);
+            color: #ffffff;
+            box-shadow: var(--shadow-button);
+        }
+
+        .button--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-button-hover);
+        }
+
+        .button--primary:focus-visible {
+            outline: 3px solid rgba(44, 82, 130, 0.28);
+            outline-offset: 2px;
+        }
+
+        .button--secondary {
+            background: rgba(15, 23, 42, 0.05);
+            color: var(--text);
+            border: 1px solid rgba(15, 23, 42, 0.12);
+        }
+
+        .button--secondary:hover {
+            background: rgba(15, 23, 42, 0.12);
+        }
+
+        .button--ghost {
+            background: transparent;
+            color: var(--accent-strong);
+            border: 1px solid rgba(44, 82, 130, 0.24);
+        }
+
+        .button--ghost:hover {
+            background: rgba(44, 82, 130, 0.1);
+        }
+
+        .button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+        }
+
+        .button.is-busy::after {
+            content: '';
+            width: 0.9rem;
+            height: 0.9rem;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2rem;
+            padding: 0.25rem 0.55rem;
+            border-radius: 999px;
+            background: rgba(44, 82, 130, 0.14);
+            color: var(--accent-strong);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .small {
+            font-size: 0.78rem;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-header__top {
+                flex-direction: column;
+                align-items: center;
+                gap: 1.1rem;
+            }
+
+            .page-header__top .page-nav {
+                margin-left: 0;
+            }
+
+            .app-logo {
+                order: -1;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header__content">
+            <div class="page-header__top">
+                <a class="app-logo" href="index.html" aria-label="Loki Launcher home">
+                    <span class="app-logo__mark" aria-hidden="true">
+                        <img src="assets/loki-launcher-logo.svg" alt="" />
+                    </span>
+                    <span class="app-logo__text">
+                        <span class="app-logo__title">Loki Launcher</span>
+                        <span class="app-logo__subtitle">Mission Control</span>
+                    </span>
+                </a>
+                <nav class="page-nav" aria-label="Primary">
+                    <a href="index.html" class="page-nav__link">Credentials</a>
+                    <a href="composer.html" class="page-nav__link">Post Composer</a>
+                    <a href="templates.html" class="page-nav__link">Templates</a>
+                    <a href="notifications.html" class="page-nav__link is-active">Notifications</a>
+                </nav>
+            </div>
+            <h1 class="page-header__title">Notifications Hub</h1>
+            <p class="page-header__subtitle">Review comments, likes, mentions, and every signal from your latest posts. Each refresh pulls live data with the API credentials stored on the Credentials tab, while the cooldown keeps cross-posting safe.</p>
+        </div>
+    </header>
+
+    <main class="page-layout page-layout--notifications">
+        <section class="activity-grid" aria-label="Platform notifications">
+            <article class="activity-card" data-platform="facebook">
+                <header class="activity-card__header">
+                    <div class="activity-card__left">
+                        <div class="activity-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook logo">
+                        </div>
+                        <div>
+                            <h2 class="activity-card__title">Facebook</h2>
+                            <p class="activity-card__summary" data-field="summary">Loading latest signals…</p>
+                        </div>
+                    </div>
+                    <button type="button" class="button button--secondary" data-action="refresh-activity" data-platform="facebook">Refresh activity</button>
+                </header>
+                <div class="activity-card__body">
+                    <section class="latest-post" aria-label="Latest post overview">
+                        <div class="latest-post__meta">
+                            <h3>Latest Post</h3>
+                            <span data-field="post-published" title="">—</span>
+                        </div>
+                        <h4 class="latest-post__title" data-field="post-title">Loading…</h4>
+                        <p class="latest-post__excerpt" data-field="post-preview">Connect a valid token on the Credentials tab and refresh for live data.</p>
+                        <dl class="latest-post__stats" data-post-stats></dl>
+                    </section>
+                    <section class="activity-groups" aria-label="Engagement breakdown">
+                        <h3 class="section-title">Engagement</h3>
+                        <div class="activity-groups__grid" data-groups></div>
+                    </section>
+                    <section class="timeline" aria-label="Activity timeline">
+                        <h3 class="section-title">Activity Timeline</h3>
+                        <ul class="timeline__list" data-timeline></ul>
+                    </section>
+                </div>
+            </article>
+
+            <article class="activity-card" data-platform="github">
+                <header class="activity-card__header">
+                    <div class="activity-card__left">
+                        <div class="activity-card__logo">
+                            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub logo">
+                        </div>
+                        <div>
+                            <h2 class="activity-card__title">GitHub</h2>
+                            <p class="activity-card__summary" data-field="summary">Loading repository activity…</p>
+                        </div>
+                    </div>
+                    <button type="button" class="button button--secondary" data-action="refresh-activity" data-platform="github">Refresh activity</button>
+                </header>
+                <div class="activity-card__body">
+                    <section class="latest-post" aria-label="Latest post overview">
+                        <div class="latest-post__meta">
+                            <h3>Latest Post</h3>
+                            <span data-field="post-published" title="">—</span>
+                        </div>
+                        <h4 class="latest-post__title" data-field="post-title">Loading…</h4>
+                        <p class="latest-post__excerpt" data-field="post-preview">Store your GitHub token on the Credentials tab then refresh to pull activity.</p>
+                        <dl class="latest-post__stats" data-post-stats></dl>
+                    </section>
+                    <section class="activity-groups" aria-label="Engagement breakdown">
+                        <h3 class="section-title">Engagement</h3>
+                        <div class="activity-groups__grid" data-groups></div>
+                    </section>
+                    <section class="timeline" aria-label="Activity timeline">
+                        <h3 class="section-title">Activity Timeline</h3>
+                        <ul class="timeline__list" data-timeline></ul>
+                    </section>
+                </div>
+            </article>
+            <article class="activity-card" data-platform="twitter">
+                <header class="activity-card__header">
+                    <div class="activity-card__left">
+                        <div class="activity-card__logo">
+                            <img src="https://abs.twimg.com/responsive-web/client-web/icon-ios.b1fc7275.png" alt="Twitter X logo">
+                        </div>
+                        <div>
+                            <h2 class="activity-card__title">Twitter (X)</h2>
+                            <p class="activity-card__summary" data-field="summary">Loading tweets and mentions…</p>
+                        </div>
+                    </div>
+                    <button type="button" class="button button--secondary" data-action="refresh-activity" data-platform="twitter">Refresh activity</button>
+                </header>
+                <div class="activity-card__body">
+                    <section class="latest-post" aria-label="Latest post overview">
+                        <div class="latest-post__meta">
+                            <h3>Latest Post</h3>
+                            <span data-field="post-published" title="">—</span>
+                        </div>
+                        <h4 class="latest-post__title" data-field="post-title">Loading…</h4>
+                        <p class="latest-post__excerpt" data-field="post-preview">Authorize Twitter (X) in Credentials and refresh to load replies and mentions.</p>
+                        <dl class="latest-post__stats" data-post-stats></dl>
+                    </section>
+                    <section class="activity-groups" aria-label="Engagement breakdown">
+                        <h3 class="section-title">Engagement</h3>
+                        <div class="activity-groups__grid" data-groups></div>
+                    </section>
+                    <section class="timeline" aria-label="Activity timeline">
+                        <h3 class="section-title">Activity Timeline</h3>
+                        <ul class="timeline__list" data-timeline></ul>
+                    </section>
+                </div>
+            </article>
+
+            <article class="activity-card" data-platform="openai">
+                <header class="activity-card__header">
+                    <div class="activity-card__left">
+                        <div class="activity-card__logo">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/OpenAI_Logo.svg" alt="OpenAI logo">
+                        </div>
+                        <div>
+                            <h2 class="activity-card__title">OpenAI</h2>
+                            <p class="activity-card__summary" data-field="summary">Loading prompt and usage feedback…</p>
+                        </div>
+                    </div>
+                    <button type="button" class="button button--secondary" data-action="refresh-activity" data-platform="openai">Refresh activity</button>
+                </header>
+                <div class="activity-card__body">
+                    <section class="latest-post" aria-label="Latest post overview">
+                        <div class="latest-post__meta">
+                            <h3>Latest Post</h3>
+                            <span data-field="post-published" title="">—</span>
+                        </div>
+                        <h4 class="latest-post__title" data-field="post-title">Loading…</h4>
+                        <p class="latest-post__excerpt" data-field="post-preview">Save your OpenAI API key on the Credentials tab then refresh to inspect usage.</p>
+                        <dl class="latest-post__stats" data-post-stats></dl>
+                    </section>
+                    <section class="activity-groups" aria-label="Engagement breakdown">
+                        <h3 class="section-title">Engagement</h3>
+                        <div class="activity-groups__grid" data-groups></div>
+                    </section>
+                    <section class="timeline" aria-label="Activity timeline">
+                        <h3 class="section-title">Activity Timeline</h3>
+                        <ul class="timeline__list" data-timeline></ul>
+                    </section>
+                </div>
+            </article>
+        </section>
+
+        <aside class="sidebar">
+            <section class="cooldown-card" aria-labelledby="cooldown-title">
+                <h2 id="cooldown-title">Posting Cooldown</h2>
+                <p class="muted">Set the minimum delay between outbound posts so automations never trip rate limits.</p>
+                <div class="cooldown-control">
+                    <div class="cooldown-control__row">
+                        <label for="cooldown-duration">Cooldown (seconds)</label>
+                        <span class="cooldown-control__value" id="cooldown-duration-label">90s</span>
+                    </div>
+                    <input type="range" id="cooldown-duration" min="30" max="300" step="15" value="90" aria-describedby="cooldown-title">
+                </div>
+                <div class="cooldown-status" aria-live="polite">
+                    <span>Next allowed post</span>
+                    <strong id="cooldown-status">Ready</strong>
+                </div>
+                <button type="button" class="button button--primary" id="cooldown-trigger">Start cross-post cooldown</button>
+                <p class="muted small">The cooldown disables posting while the timer runs to keep your accounts safe.</p>
+            </section>
+
+            <section class="activity-log-card" aria-labelledby="activity-log-title">
+                <div class="activity-log-card__header">
+                    <h2 id="activity-log-title">Notifications Log</h2>
+                    <button type="button" class="button button--ghost" id="clear-log">Clear log</button>
+                </div>
+                <div id="notifications-console" class="console-log" role="log" aria-live="polite" aria-atomic="false"></div>
+            </section>
+        </aside>
+    </main>
+    <script>
+        (() => {
+            const consoleEl = document.getElementById('notifications-console');
+            const clearLogBtn = document.getElementById('clear-log');
+            const slider = document.getElementById('cooldown-duration');
+            const sliderLabel = document.getElementById('cooldown-duration-label');
+            const statusEl = document.getElementById('cooldown-status');
+            const triggerBtn = document.getElementById('cooldown-trigger');
+            let cooldownTimerId = null;
+            let cooldownEndsAt = null;
+
+            const log = (message, type = 'info') => {
+                if (!consoleEl) {
+                    return;
+                }
+
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-entry--${type}`;
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'log-entry__time';
+                timeSpan.textContent = new Date().toLocaleTimeString();
+
+                const messageSpan = document.createElement('span');
+                messageSpan.className = 'log-entry__message';
+                messageSpan.textContent = message;
+
+                entry.append(timeSpan, messageSpan);
+                consoleEl.appendChild(entry);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            };
+
+            clearLogBtn?.addEventListener('click', () => {
+                if (consoleEl) {
+                    consoleEl.innerHTML = '';
+                }
+                log('Activity log cleared.', 'info');
+            });
+
+            const platformLabels = {
+                facebook: 'Facebook',
+                github: 'GitHub',
+                twitter: 'Twitter (X)',
+                openai: 'OpenAI'
+            };
+
+            const storagePrefix = 'akm:';
+            const readSecret = (id) => {
+                try {
+                    const raw = localStorage.getItem(`${storagePrefix}${id}`);
+                    return raw ? raw.trim() : '';
+                } catch {
+                    return '';
+                }
+            };
+
+            const truncate = (value, length = 140) => {
+                if (!value) {
+                    return '';
+                }
+                const trimmed = value.toString().trim();
+                if (trimmed.length <= length) {
+                    return trimmed;
+                }
+                return `${trimmed.slice(0, length - 1)}…`;
+            };
+
+            const toDate = (value) => {
+                if (!value && value !== 0) {
+                    return null;
+                }
+                if (value instanceof Date) {
+                    return Number.isNaN(value.getTime()) ? null : value;
+                }
+                const date = typeof value === 'number' ? new Date(value) : new Date(value ?? '');
+                return Number.isNaN(date.getTime()) ? null : date;
+            };
+
+            const formatRelativeTime = (value) => {
+                const date = toDate(value);
+                if (!date) {
+                    return '—';
+                }
+
+                const diffMs = Date.now() - date.getTime();
+                const minutes = Math.max(0, Math.round(diffMs / 60000));
+
+                if (minutes < 1) {
+                    return 'Just now';
+                }
+                if (minutes === 1) {
+                    return '1 minute ago';
+                }
+                if (minutes < 60) {
+                    return `${minutes} minutes ago`;
+                }
+
+                const hours = Math.round(minutes / 60);
+                if (hours === 1) {
+                    return '1 hour ago';
+                }
+                if (hours < 24) {
+                    return `${hours} hours ago`;
+                }
+
+                const days = Math.round(hours / 24);
+                if (days === 1) {
+                    return '1 day ago';
+                }
+                return `${days} days ago`;
+            };
+
+            const formatTimeLabel = (value) => {
+                const date = toDate(value);
+                if (!date) {
+                    return '';
+                }
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            };
+
+            const fetchJson = async (url, options = {}, contextLabel = 'request') => {
+                const response = await fetch(url, { cache: 'no-store', ...options });
+                const text = await response.text();
+                let data = null;
+
+                if (text) {
+                    try {
+                        data = JSON.parse(text);
+                    } catch (error) {
+                        throw new Error(`${contextLabel} returned invalid JSON.`);
+                    }
+                }
+
+                if (!response.ok) {
+                    const message = data?.error?.message || data?.message || `${contextLabel} failed (${response.status})`;
+                    const error = new Error(message);
+                    error.status = response.status;
+                    error.data = data;
+                    throw error;
+                }
+
+                return data;
+            };
+
+            const setLoadingState = (platform, message = 'Loading…') => {
+                const card = document.querySelector(`[data-platform="${platform}"]`);
+                if (!card) {
+                    return;
+                }
+
+                const summaryEl = card.querySelector('[data-field="summary"]');
+                if (summaryEl) {
+                    summaryEl.textContent = message;
+                }
+
+                const publishedEl = card.querySelector('[data-field="post-published"]');
+                if (publishedEl) {
+                    publishedEl.textContent = '—';
+                    publishedEl.removeAttribute('title');
+                }
+
+                const titleEl = card.querySelector('[data-field="post-title"]');
+                if (titleEl) {
+                    titleEl.textContent = 'Loading…';
+                }
+
+                const previewEl = card.querySelector('[data-field="post-preview"]');
+                if (previewEl) {
+                    previewEl.textContent = '';
+                }
+
+                const statsEl = card.querySelector('[data-post-stats]');
+                if (statsEl) {
+                    statsEl.innerHTML = '';
+                }
+
+                const groupsContainer = card.querySelector('[data-groups]');
+                if (groupsContainer) {
+                    groupsContainer.innerHTML = '';
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'activity-group';
+                    const placeholderMessage = document.createElement('p');
+                    placeholderMessage.className = 'activity-list__empty';
+                    placeholderMessage.textContent = 'Loading…';
+                    placeholder.appendChild(placeholderMessage);
+                    groupsContainer.appendChild(placeholder);
+                }
+
+                const timelineContainer = card.querySelector('[data-timeline]');
+                if (timelineContainer) {
+                    timelineContainer.innerHTML = '';
+                }
+            };
+
+            const renderPlatform = (platform, data = {}) => {
+                const card = document.querySelector(`[data-platform="${platform}"]`);
+                if (!card) {
+                    return;
+                }
+
+                const summaryEl = card.querySelector('[data-field="summary"]');
+                if (summaryEl) {
+                    summaryEl.textContent = data.summary || 'No data available.';
+                }
+
+                const titleEl = card.querySelector('[data-field="post-title"]');
+                const previewEl = card.querySelector('[data-field="post-preview"]');
+                const publishedEl = card.querySelector('[data-field="post-published"]');
+                const statsEl = card.querySelector('[data-post-stats]');
+
+                const post = data.post;
+                if (post) {
+                    if (titleEl) {
+                        titleEl.textContent = post.title || 'Untitled';
+                    }
+                    if (previewEl) {
+                        previewEl.textContent = post.preview || '';
+                    }
+                    if (publishedEl) {
+                        if (post.publishedAt) {
+                            const publishedDate = toDate(post.publishedAt);
+                            if (publishedDate) {
+                                publishedEl.textContent = formatRelativeTime(publishedDate);
+                                publishedEl.title = publishedDate.toLocaleString();
+                            } else {
+                                publishedEl.textContent = '—';
+                                publishedEl.removeAttribute('title');
+                            }
+                        } else {
+                            publishedEl.textContent = '—';
+                            publishedEl.removeAttribute('title');
+                        }
+                    }
+                    if (statsEl) {
+                        statsEl.innerHTML = '';
+                        if (Array.isArray(post.stats) && post.stats.length) {
+                            post.stats.forEach((stat) => {
+                                const dt = document.createElement('dt');
+                                dt.textContent = stat.label ?? '';
+                                const dd = document.createElement('dd');
+                                dd.textContent = stat.value ?? '';
+                                statsEl.append(dt, dd);
+                            });
+                        }
+                    }
+                } else {
+                    if (titleEl) {
+                        titleEl.textContent = 'No recent post found';
+                    }
+                    if (previewEl) {
+                        previewEl.textContent = 'We could not locate a recent update for this platform.';
+                    }
+                    if (publishedEl) {
+                        publishedEl.textContent = '—';
+                        publishedEl.removeAttribute('title');
+                    }
+                    if (statsEl) {
+                        statsEl.innerHTML = '';
+                    }
+                }
+
+                const groupsContainer = card.querySelector('[data-groups]');
+                if (groupsContainer) {
+                    groupsContainer.innerHTML = '';
+                    if (Array.isArray(data.groups) && data.groups.length) {
+                        data.groups.forEach((group) => {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'activity-group';
+
+                            const header = document.createElement('div');
+                            header.className = 'activity-group__header';
+
+                            const title = document.createElement('h4');
+                            title.className = 'activity-group__title';
+                            title.textContent = group.label;
+
+                            const count = document.createElement('span');
+                            count.className = 'small muted';
+                            const itemsLength = group.items?.length ?? 0;
+                            count.textContent = itemsLength ? `${itemsLength}` : '0';
+
+                            header.append(title, count);
+                            wrapper.appendChild(header);
+
+                            if (itemsLength) {
+                                const list = document.createElement('ul');
+                                list.className = 'activity-list';
+                                group.items.forEach((item) => {
+                                    const li = document.createElement('li');
+                                    li.className = 'activity-list__item';
+
+                                    const meta = document.createElement('div');
+                                    meta.className = 'activity-list__meta';
+
+                                    const author = document.createElement('span');
+                                    author.className = 'activity-list__author';
+                                    author.textContent = item.author || 'Unknown';
+
+                                    meta.appendChild(author);
+
+                                    if (item.context) {
+                                        const context = document.createElement('span');
+                                        context.className = 'activity-list__context';
+                                        context.textContent = item.context;
+                                        meta.appendChild(context);
+                                    }
+
+                                    if (item.at) {
+                                        const time = document.createElement('span');
+                                        time.className = 'activity-list__time';
+                                        const itemDate = toDate(item.at);
+                                        if (itemDate) {
+                                            time.textContent = formatRelativeTime(itemDate);
+                                            time.title = itemDate.toLocaleString();
+                                        }
+                                        meta.appendChild(time);
+                                    }
+
+                                    li.appendChild(meta);
+
+                                    if (item.message) {
+                                        const message = document.createElement('p');
+                                        message.className = 'activity-list__message';
+                                        message.textContent = item.message;
+                                        li.appendChild(message);
+                                    }
+
+                                    list.appendChild(li);
+                                });
+
+                                wrapper.appendChild(list);
+                            } else {
+                                const empty = document.createElement('p');
+                                empty.className = 'activity-list__empty';
+                                empty.textContent = group.emptyText || 'No activity recorded.';
+                                wrapper.appendChild(empty);
+                            }
+
+                            groupsContainer.appendChild(wrapper);
+                        });
+                    } else {
+                        const empty = document.createElement('p');
+                        empty.className = 'activity-list__empty';
+                        empty.textContent = 'No engagement records found.';
+                        groupsContainer.appendChild(empty);
+                    }
+                }
+
+                const timelineContainer = card.querySelector('[data-timeline]');
+                if (timelineContainer) {
+                    timelineContainer.innerHTML = '';
+                    const timeline = Array.isArray(data.timeline) ? data.timeline : [];
+                    if (!timeline.length) {
+                        const li = document.createElement('li');
+                        li.className = 'timeline__item';
+                        const message = document.createElement('div');
+                        message.className = 'timeline__message';
+                        message.textContent = 'No recent activity recorded.';
+                        li.appendChild(message);
+                        timelineContainer.appendChild(li);
+                    } else {
+                        timeline.forEach((item) => {
+                            const li = document.createElement('li');
+                            li.className = 'timeline__item';
+
+                            const label = document.createElement('div');
+                            label.className = 'timeline__label';
+                            label.textContent = item.type || 'Update';
+
+                            const message = document.createElement('div');
+                            message.className = 'timeline__message';
+                            message.textContent = item.message || '';
+
+                            const time = document.createElement('span');
+                            time.className = 'timeline__time';
+                            if (item.at) {
+                                const eventDate = toDate(item.at);
+                                if (eventDate) {
+                                    time.textContent = `${formatRelativeTime(eventDate)} • ${formatTimeLabel(eventDate)}`;
+                                    time.title = eventDate.toLocaleString();
+                                }
+                            }
+
+                            li.append(label, message, time);
+                            timelineContainer.appendChild(li);
+                        });
+                    }
+                }
+            };
+
+            const platformLoaders = {
+                facebook: async () => {
+                    const token = readSecret('fb_long_token') || readSecret('fb_short_token');
+                    if (!token) {
+                        throw new Error('No Facebook token stored. Save one on the Credentials tab.');
+                    }
+
+                    const feedParams = new URLSearchParams({
+                        access_token: token,
+                        limit: '1',
+                        fields: ['id', 'message', 'story', 'permalink_url', 'created_time'].join(',')
+                    });
+
+                    const feed = await fetchJson(`https://graph.facebook.com/v20.0/me/feed?${feedParams.toString()}`, {}, 'Facebook feed');
+                    const post = feed?.data?.[0];
+                    if (!post) {
+                        return {
+                            summary: 'No recent posts found for your Facebook account.',
+                            post: null,
+                            groups: [],
+                            timeline: []
+                        };
+                    }
+
+                    let detail = null;
+                    try {
+                        const detailParams = new URLSearchParams({
+                            access_token: token,
+                            fields: [
+                                'message',
+                                'story',
+                                'created_time',
+                                'permalink_url',
+                                'shares',
+                                'comments.summary(true){from{name},message,created_time,id}',
+                                'likes.summary(true){name,id}',
+                                'insights.metric(post_impressions,post_engaged_users)'
+                            ].join(',')
+                        });
+                        detail = await fetchJson(`https://graph.facebook.com/v20.0/${post.id}?${detailParams.toString()}`, {}, 'Facebook post details');
+                    } catch (error) {
+                        log(`Facebook metrics limited: ${error.message}`, 'warn');
+                    }
+
+                    let tagged = [];
+                    try {
+                        const taggedParams = new URLSearchParams({
+                            access_token: token,
+                            limit: '5',
+                            fields: 'from{name},message,created_time,permalink_url'
+                        });
+                        const taggedResponse = await fetchJson(`https://graph.facebook.com/v20.0/me/tagged?${taggedParams.toString()}`, {}, 'Facebook mentions');
+                        tagged = taggedResponse?.data ?? [];
+                    } catch (error) {
+                        log(`Facebook mentions unavailable: ${error.message}`, 'warn');
+                    }
+
+                    const comments = detail?.comments?.data ?? [];
+                    const likes = detail?.likes?.data ?? [];
+
+                    const insightMap = new Map();
+                    detail?.insights?.data?.forEach((metric) => {
+                        if (metric?.name && Array.isArray(metric?.values) && metric.values[0]?.value !== undefined) {
+                            const label = metric.name.replace('post_', '').replace(/_/g, ' ');
+                            insightMap.set(label, metric.values[0].value);
+                        }
+                    });
+
+                    const stats = [];
+                    if (detail?.comments?.summary?.total_count !== undefined) {
+                        stats.push({ label: 'Comments', value: detail.comments.summary.total_count });
+                    }
+                    if (detail?.likes?.summary?.total_count !== undefined) {
+                        stats.push({ label: 'Likes', value: detail.likes.summary.total_count });
+                    }
+                    if (detail?.shares?.count !== undefined) {
+                        stats.push({ label: 'Shares', value: detail.shares.count });
+                    }
+                    insightMap.forEach((value, label) => {
+                        stats.push({ label: label.replace(/\w/g, (char) => char.toUpperCase()), value });
+                    });
+
+                    const commentItems = comments.map((comment) => ({
+                        author: comment.from?.name || 'Unknown user',
+                        message: truncate(comment.message ?? '', 220),
+                        at: comment.created_time,
+                        context: 'Comment'
+                    }));
+
+                    const likeItems = likes.map((like) => ({
+                        author: like.name || 'Unknown user',
+                        message: 'Liked your post'
+                    }));
+
+                    const mentionItems = tagged.map((item) => ({
+                        author: item.from?.name || 'Unknown user',
+                        message: truncate(item.message ?? '', 220),
+                        at: item.created_time,
+                        context: 'Mention'
+                    }));
+
+                    const timeline = [
+                        ...commentItems.map((item) => ({
+                            type: 'Comment',
+                            message: `${item.author}: ${truncate(item.message, 120)}`,
+                            at: item.at
+                        })),
+                        ...mentionItems.map((item) => ({
+                            type: 'Mention',
+                            message: `${item.author} mentioned you`,
+                            at: item.at
+                        }))
+                    ].filter((entry) => entry.at);
+
+                    timeline.sort((a, b) => (toDate(b.at)?.getTime() ?? 0) - (toDate(a.at)?.getTime() ?? 0));
+
+                    const summaryParts = [];
+                    if (commentItems.length) {
+                        summaryParts.push(`${commentItems.length} comment${commentItems.length === 1 ? '' : 's'}`);
+                    }
+                    if (likeItems.length && detail?.likes?.summary?.total_count !== undefined) {
+                        summaryParts.push(`${detail.likes.summary.total_count} like${detail.likes.summary.total_count === 1 ? '' : 's'}`);
+                    }
+                    if (mentionItems.length) {
+                        summaryParts.push(`${mentionItems.length} mention${mentionItems.length === 1 ? '' : 's'}`);
+                    }
+
+                    const summary = summaryParts.length
+                        ? `Latest post captured with ${summaryParts.join(', ')}.`
+                        : 'Latest Facebook post retrieved.';
+
+                    return {
+                        summary,
+                        post: {
+                            title: detail?.story || truncate(post.message ?? 'Untitled post', 120),
+                            preview: detail?.message || post.message || 'No message available for this post.',
+                            publishedAt: post.created_time,
+                            stats
+                        },
+                        groups: [
+                            { key: 'comments', label: 'Comments', emptyText: 'No comments found.', items: commentItems },
+                            { key: 'likes', label: 'Likes', emptyText: 'No likes recorded.', items: likeItems },
+                            { key: 'mentions', label: 'Mentions', emptyText: 'No mentions detected.', items: mentionItems }
+                        ],
+                        timeline
+                    };
+                },
+                github: async () => {
+                    const token = readSecret('gh_pat') || readSecret('gh_access_token');
+                    if (!token) {
+                        throw new Error('No GitHub token stored. Save one on the Credentials tab.');
+                    }
+
+                    const headers = {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/vnd.github+json'
+                    };
+
+                    const user = await fetchJson('https://api.github.com/user', { headers }, 'GitHub user');
+
+                    const notifications = await fetchJson('https://api.github.com/notifications?per_page=30', { headers }, 'GitHub notifications');
+                    let events = [];
+                    try {
+                        events = await fetchJson(`https://api.github.com/users/${encodeURIComponent(user.login)}/received_events?per_page=20`, { headers }, 'GitHub events');
+                    } catch (error) {
+                        log(`GitHub events unavailable: ${error.message}`, 'warn');
+                    }
+
+                    const latestNotification = notifications[0];
+                    const post = latestNotification
+                        ? {
+                            title: latestNotification.subject?.title ?? 'Repository update',
+                            preview: `${latestNotification.repository?.full_name ?? 'Repository'} • ${latestNotification.subject?.type ?? 'Activity'}`,
+                            publishedAt: latestNotification.updated_at,
+                            stats: [
+                                latestNotification.reason ? { label: 'Reason', value: latestNotification.reason.replace(/_/g, ' ') } : null,
+                                latestNotification.repository?.full_name ? { label: 'Repository', value: latestNotification.repository.full_name } : null
+                            ].filter(Boolean)
+                        }
+                        : null;
+
+                    const fetchCommentDetails = async (notification) => {
+                        if (!notification.latest_comment_url) {
+                            return null;
+                        }
+                        try {
+                            const comment = await fetchJson(notification.latest_comment_url, { headers }, 'GitHub comment');
+                            return {
+                                author: comment.user?.login ?? 'Unknown user',
+                                message: truncate(comment.body ?? '', 220),
+                                at: comment.updated_at ?? comment.created_at,
+                                context: notification.subject?.type ?? 'Comment'
+                            };
+                        } catch (error) {
+                            log(`GitHub comment lookup failed: ${error.message}`, 'warn');
+                            return null;
+                        }
+                    };
+
+                    const commentPromises = notifications
+                        .filter((notification) => notification.reason === 'comment')
+                        .slice(0, 6)
+                        .map((notification) => fetchCommentDetails(notification));
+
+                    const commentItemsRaw = await Promise.all(commentPromises);
+                    const commentItems = commentItemsRaw.filter(Boolean);
+
+                    const mentionItems = notifications
+                        .filter((notification) => notification.reason === 'mention')
+                        .slice(0, 8)
+                        .map((notification) => ({
+                            author: notification.repository?.full_name ?? 'Repository',
+                            message: truncate(notification.subject?.title ?? '', 200),
+                            at: notification.updated_at,
+                            context: notification.subject?.type ?? 'Mention'
+                        }));
+
+                    const reviewItems = notifications
+                        .filter((notification) => notification.reason === 'review_requested' || notification.subject?.type === 'PullRequest')
+                        .slice(0, 8)
+                        .map((notification) => ({
+                            author: notification.repository?.full_name ?? 'Repository',
+                            message: truncate(notification.subject?.title ?? '', 200),
+                            at: notification.updated_at,
+                            context: 'Review'
+                        }));
+
+                    const starEvents = events
+                        .filter((event) => event.type === 'WatchEvent')
+                        .slice(0, 8)
+                        .map((event) => ({
+                            author: event.actor?.login ?? 'User',
+                            message: `Starred ${event.repo?.name ?? 'your repository'}`,
+                            at: event.created_at,
+                            context: 'Star'
+                        }));
+
+                    const summary = notifications.length
+                        ? `You have ${notifications.length} GitHub notification${notifications.length === 1 ? '' : 's'} awaiting review.`
+                        : `No unread notifications for ${user.login}.`;
+
+                    const timeline = [
+                        ...notifications.slice(0, 12).map((notification) => ({
+                            type: notification.subject?.type ?? 'Notification',
+                            message: `${notification.repository?.full_name ?? 'Repository'} • ${notification.subject?.title ?? ''}`,
+                            at: notification.updated_at
+                        })),
+                        ...starEvents.map((event) => ({
+                            type: 'Star',
+                            message: `${event.author} starred ${event.message.replace('Starred ', '')}`,
+                            at: event.at
+                        }))
+                    ].filter((entry) => entry.at);
+
+                    timeline.sort((a, b) => (toDate(b.at)?.getTime() ?? 0) - (toDate(a.at)?.getTime() ?? 0));
+
+                    return {
+                        summary,
+                        post,
+                        groups: [
+                            { key: 'comments', label: 'Issue & PR Comments', emptyText: 'No comments found.', items: commentItems },
+                            { key: 'mentions', label: 'Mentions', emptyText: 'No mentions detected.', items: mentionItems },
+                            { key: 'reviews', label: 'Reviews', emptyText: 'No review requests.', items: reviewItems },
+                            { key: 'stars', label: 'Stars', emptyText: 'No new stars.', items: starEvents }
+                        ],
+                        timeline
+                    };
+                },
+                twitter: async () => {
+                    const token = readSecret('tw_access_token');
+                    if (!token) {
+                        throw new Error('No Twitter access token stored. Save one on the Credentials tab.');
+                    }
+
+                    const headers = {
+                        Authorization: `Bearer ${token}`
+                    };
+
+                    const profile = await fetchJson('https://api.twitter.com/2/users/me?user.fields=username,name', { headers }, 'Twitter profile');
+                    const user = profile?.data;
+                    if (!user) {
+                        throw new Error('Unable to determine your Twitter profile from the stored token.');
+                    }
+
+                    const tweetsResponse = await fetchJson(`https://api.twitter.com/2/users/${user.id}/tweets?max_results=5&tweet.fields=created_at,public_metrics,conversation_id`, { headers }, 'Twitter posts');
+                    const latestTweet = tweetsResponse?.data?.[0] ?? null;
+
+                    let post = null;
+                    if (latestTweet) {
+                        const metrics = latestTweet.public_metrics ?? {};
+                        post = {
+                            title: truncate(latestTweet.text ?? 'Tweet', 120),
+                            preview: latestTweet.text ?? '',
+                            publishedAt: latestTweet.created_at,
+                            stats: [
+                                { label: 'Replies', value: metrics.reply_count ?? 0 },
+                                { label: 'Likes', value: metrics.like_count ?? 0 },
+                                { label: 'Retweets', value: metrics.retweet_count ?? 0 },
+                                { label: 'Quotes', value: metrics.quote_count ?? 0 }
+                            ]
+                        };
+                    }
+
+                    const mentionsResponse = await fetchJson(`https://api.twitter.com/2/users/${user.id}/mentions?max_results=20&tweet.fields=created_at,public_metrics,conversation_id&expansions=author_id&user.fields=username,name`, { headers }, 'Twitter mentions');
+                    const mentionUsers = new Map((mentionsResponse.includes?.users ?? []).map((entry) => [entry.id, entry]));
+                    const mentions = mentionsResponse.data ?? [];
+
+                    let likesData = null;
+                    if (latestTweet) {
+                        try {
+                            likesData = await fetchJson(`https://api.twitter.com/2/tweets/${latestTweet.id}/liking_users?user.fields=username,name`, { headers }, 'Twitter likes');
+                        } catch (error) {
+                            log(`Twitter likes unavailable: ${error.message}`, 'warn');
+                        }
+                    }
+
+                    let sharesData = null;
+                    if (latestTweet) {
+                        try {
+                            sharesData = await fetchJson(`https://api.twitter.com/2/tweets/${latestTweet.id}/retweeted_by?user.fields=username,name`, { headers }, 'Twitter reshares');
+                        } catch (error) {
+                            log(`Twitter reshares unavailable: ${error.message}`, 'warn');
+                        }
+                    }
+
+                    const replies = latestTweet
+                        ? mentions.filter((tweet) => tweet.conversation_id === latestTweet.conversation_id)
+                        : [];
+
+                    const commentItems = replies.slice(0, 8).map((tweet) => {
+                        const author = mentionUsers.get(tweet.author_id);
+                        return {
+                            author: author ? `@${author.username}` : 'Unknown user',
+                            message: truncate(tweet.text ?? '', 220),
+                            at: tweet.created_at,
+                            context: 'Reply'
+                        };
+                    });
+
+                    const mentionItems = mentions
+                        .filter((tweet) => !latestTweet || tweet.conversation_id !== latestTweet.conversation_id)
+                        .slice(0, 8)
+                        .map((tweet) => {
+                            const author = mentionUsers.get(tweet.author_id);
+                            return {
+                                author: author ? `@${author.username}` : 'Unknown user',
+                                message: truncate(tweet.text ?? '', 220),
+                                at: tweet.created_at,
+                                context: 'Mention'
+                            };
+                        });
+
+                    const likeItems = (likesData?.data ?? []).slice(0, 10).map((userEntry) => ({
+                        author: userEntry?.username ? `@${userEntry.username}` : 'User',
+                        message: 'Liked your post'
+                    }));
+
+                    const shareItems = (sharesData?.data ?? []).slice(0, 10).map((userEntry) => ({
+                        author: userEntry?.username ? `@${userEntry.username}` : 'User',
+                        message: 'Reshared your post'
+                    }));
+
+                    const timeline = [
+                        ...commentItems.map((item) => ({
+                            type: 'Reply',
+                            message: `${item.author} replied`,
+                            at: item.at
+                        })),
+                        ...mentionItems.map((item) => ({
+                            type: 'Mention',
+                            message: `${item.author} mentioned you`,
+                            at: item.at
+                        }))
+                    ];
+
+                    timeline.sort((a, b) => (toDate(b.at)?.getTime() ?? 0) - (toDate(a.at)?.getTime() ?? 0));
+
+                    const summary = latestTweet
+                        ? `Loaded latest tweet with ${post.stats?.find((stat) => stat.label === 'Replies')?.value ?? 0} replies and ${post.stats?.find((stat) => stat.label === 'Likes')?.value ?? 0} likes.`
+                        : `No tweets found for @${user.username}.`;
+
+                    return {
+                        summary,
+                        post,
+                        groups: [
+                            { key: 'comments', label: 'Replies', emptyText: 'No replies yet.', items: commentItems },
+                            { key: 'likes', label: 'Likes', emptyText: 'No likes recorded.', items: likeItems },
+                            { key: 'mentions', label: 'Mentions', emptyText: 'No mentions captured.', items: mentionItems },
+                            { key: 'shares', label: 'Quotes & Retweets', emptyText: 'No reshares recorded.', items: shareItems }
+                        ],
+                        timeline
+                    };
+                },
+                openai: async () => {
+                    const apiKey = readSecret('oai_api_key');
+                    if (!apiKey) {
+                        throw new Error('No OpenAI API key stored. Save one on the Credentials tab.');
+                    }
+
+                    const headers = {
+                        Authorization: `Bearer ${apiKey}`
+                    };
+
+                    let filesResponse = { data: [] };
+                    try {
+                        filesResponse = await fetchJson('https://api.openai.com/v1/files', { headers }, 'OpenAI files');
+                    } catch (error) {
+                        log(`OpenAI files unavailable: ${error.message}`, 'warn');
+                    }
+
+                    let fineTuneResponse = { data: [] };
+                    try {
+                        fineTuneResponse = await fetchJson('https://api.openai.com/v1/fine_tuning/jobs?limit=5', { headers }, 'OpenAI fine-tuning jobs');
+                    } catch (error) {
+                        log(`OpenAI fine-tuning jobs unavailable: ${error.message}`, 'warn');
+                    }
+
+                    let modelsResponse = { data: [] };
+                    try {
+                        modelsResponse = await fetchJson('https://api.openai.com/v1/models', { headers }, 'OpenAI models');
+                    } catch (error) {
+                        log(`OpenAI models unavailable: ${error.message}`, 'warn');
+                    }
+
+                    const files = filesResponse.data ?? [];
+                    const latestFile = files
+                        .slice()
+                        .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))[0];
+
+                    const fileItems = files.slice(0, 8).map((file) => ({
+                        author: file.filename ?? 'File',
+                        message: `${file.purpose ?? 'general'} • ${(file.bytes / 1024).toFixed(1)} KB`,
+                        at: file.created_at ? new Date(file.created_at * 1000).toISOString() : null,
+                        context: 'File'
+                    }));
+
+                    const fineTuneItems = (fineTuneResponse.data ?? []).map((job) => ({
+                        author: job.model ?? 'Model',
+                        message: `${job.status ?? 'pending'} • ${(job.finished_at ? 'Finished' : 'Started')} ${formatRelativeTime((job.finished_at ? job.finished_at : job.created_at) * 1000)}`,
+                        at: job.finished_at ? new Date(job.finished_at * 1000).toISOString() : (job.created_at ? new Date(job.created_at * 1000).toISOString() : null),
+                        context: 'Fine-tune'
+                    }));
+
+                    const modelItems = (modelsResponse.data ?? []).slice(0, 8).map((model) => ({
+                        author: model.id ?? 'Model',
+                        message: `Owned by ${model.owned_by ?? 'unknown'}`,
+                        context: 'Model'
+                    }));
+
+                    const summary = `Workspace contains ${files.length} file${files.length === 1 ? '' : 's'} and ${(fineTuneResponse.data ?? []).length} fine-tuning job${(fineTuneResponse.data ?? []).length === 1 ? '' : 's'}.`;
+
+                    const timeline = [
+                        ...fileItems.map((item) => ({
+                            type: 'File',
+                            message: `${item.author} uploaded`,
+                            at: item.at
+                        })),
+                        ...fineTuneItems.map((item) => ({
+                            type: 'Fine-tune',
+                            message: `${item.author}: ${item.message}`,
+                            at: item.at
+                        }))
+                    ].filter((entry) => entry.at);
+
+                    timeline.sort((a, b) => (toDate(b.at)?.getTime() ?? 0) - (toDate(a.at)?.getTime() ?? 0));
+
+                    return {
+                        summary,
+                        post: latestFile
+                            ? {
+                                title: latestFile.filename ?? 'Uploaded file',
+                                preview: `${latestFile.purpose ?? 'general'} • ${(latestFile.bytes / 1024).toFixed(1)} KB`,
+                                publishedAt: latestFile.created_at ? new Date(latestFile.created_at * 1000).toISOString() : null,
+                                stats: [
+                                    latestFile.status ? { label: 'Status', value: latestFile.status } : null,
+                                    latestFile.id ? { label: 'File ID', value: latestFile.id } : null
+                                ].filter(Boolean)
+                            }
+                            : null,
+                        groups: [
+                            { key: 'files', label: 'Files', emptyText: 'No files uploaded yet.', items: fileItems },
+                            { key: 'fineTunes', label: 'Fine-tuning Jobs', emptyText: 'No fine-tuning activity.', items: fineTuneItems },
+                            { key: 'models', label: 'Models', emptyText: 'Unable to list models.', items: modelItems }
+                        ],
+                        timeline
+                    };
+                }
+            };
+
+            const refreshPlatform = async (platform) => {
+                const label = platformLabels[platform] ?? platform;
+                const button = document.querySelector(`[data-action="refresh-activity"][data-platform="${platform}"]`);
+                if (!platformLoaders[platform]) {
+                    log(`No loader registered for ${label}.`, 'warn');
+                    return;
+                }
+
+                if (button) {
+                    button.disabled = true;
+                    button.classList.add('is-busy');
+                }
+
+                setLoadingState(platform, 'Loading…');
+                log(`Refreshing ${label} activity…`, 'info');
+
+                try {
+                    const data = await platformLoaders[platform]();
+                    renderPlatform(platform, data);
+                    log(`${label} activity refreshed.`, 'success');
+                } catch (error) {
+                    console.error(error);
+                    renderPlatform(platform, {
+                        summary: error.message ?? `Unable to refresh ${label}.`,
+                        post: null,
+                        groups: [],
+                        timeline: []
+                    });
+                    log(`${label} refresh failed: ${error.message ?? 'Unknown error'}`, 'error');
+                } finally {
+                    if (button) {
+                        button.disabled = false;
+                        button.classList.remove('is-busy');
+                    }
+                }
+            };
+
+            document.querySelectorAll('[data-action="refresh-activity"]').forEach((button) => {
+                const platform = button.dataset.platform;
+                button.addEventListener('click', () => refreshPlatform(platform));
+            });
+
+            const updateSliderLabel = () => {
+                if (slider && sliderLabel) {
+                    sliderLabel.textContent = `${slider.value}s`;
+                }
+            };
+
+            const updateCooldownStatus = () => {
+                if (!statusEl) {
+                    return;
+                }
+
+                if (!cooldownEndsAt) {
+                    statusEl.textContent = 'Ready';
+                    triggerBtn?.removeAttribute('disabled');
+                    return;
+                }
+
+                const remaining = Math.max(0, Math.ceil((cooldownEndsAt - Date.now()) / 1000));
+                if (remaining <= 0) {
+                    cooldownEndsAt = null;
+                    if (cooldownTimerId) {
+                        window.clearInterval(cooldownTimerId);
+                        cooldownTimerId = null;
+                    }
+                    statusEl.textContent = 'Ready';
+                    triggerBtn?.removeAttribute('disabled');
+                    log('Cooldown complete. Posting re-enabled.', 'success');
+                    return;
+                }
+
+                statusEl.textContent = `${remaining}s remaining`;
+                triggerBtn?.setAttribute('disabled', 'disabled');
+            };
+
+            const startCooldown = () => {
+                if (!slider) {
+                    return;
+                }
+                cooldownEndsAt = Date.now() + Number(slider.value) * 1000;
+                updateCooldownStatus();
+                if (cooldownTimerId) {
+                    window.clearInterval(cooldownTimerId);
+                }
+                cooldownTimerId = window.setInterval(updateCooldownStatus, 1000);
+            };
+
+            triggerBtn?.addEventListener('click', () => {
+                if (cooldownEndsAt && cooldownEndsAt > Date.now()) {
+                    log('Cooldown is still active. Wait before triggering another post.', 'info');
+                    return;
+                }
+                log('Cross-post triggered. Cooldown started.', 'info');
+                startCooldown();
+            });
+
+            slider?.addEventListener('input', () => {
+                updateSliderLabel();
+                if (!cooldownEndsAt && statusEl) {
+                    statusEl.textContent = 'Ready';
+                }
+            });
+
+            updateSliderLabel();
+            updateCooldownStatus();
+
+            ['facebook', 'github', 'twitter', 'openai'].forEach((platform) => {
+                window.setTimeout(() => refreshPlatform(platform), 50);
+            });
+        })();
+    </script>
+</body>
+</html>

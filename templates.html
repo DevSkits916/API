@@ -7,22 +7,23 @@
     <meta name="description" content="Organise reusable social media and announcement templates, then copy or export them as CSV for the composer.">
     <style>
         :root {
-            --bg: #f6f8fb;
+            --bg: #eff3f8;
             --card-bg: #ffffff;
-            --text: #0f172a;
-            --muted: #52606d;
-            --border: #e2e8f0;
-            --accent: #6366f1;
-            --accent-strong: #4f46e5;
-            --success: #22c55e;
-            --error: #ef4444;
-            --info: #3b82f6;
+            --text: #1f2933;
+            --muted: #556070;
+            --border: #d6dde8;
+            --accent: #2c5282;
+            --accent-strong: #1a365d;
+            --success: #2f855a;
+            --error: #c53030;
+            --info: #3a6ea5;
+            --warning: #b7791f;
             --radius-lg: 18px;
             --radius-md: 12px;
             --radius-sm: 8px;
-            --shadow-card: 0 25px 50px -20px rgba(15, 23, 42, 0.25);
-            --shadow-button: 0 18px 35px -18px rgba(79, 70, 229, 0.65);
-            --shadow-button-hover: 0 24px 45px -20px rgba(79, 70, 229, 0.7);
+            --shadow-card: 0 18px 34px -24px rgba(15, 23, 42, 0.28);
+            --shadow-button: 0 12px 28px -18px rgba(44, 82, 130, 0.4);
+            --shadow-button-hover: 0 18px 36px -18px rgba(26, 54, 93, 0.46);
             --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             --font-mono: 'JetBrains Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
         }
@@ -35,7 +36,7 @@
             margin: 0;
             font-family: var(--font-sans);
             color: var(--text);
-            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0) 55%), var(--bg);
+            background: radial-gradient(circle at top left, rgba(44, 82, 130, 0.08), rgba(26, 54, 93, 0.04) 55%), var(--bg);
             min-height: 100vh;
             line-height: 1.6;
         }
@@ -57,7 +58,7 @@
 
         .page-header {
             padding: 3rem 1.5rem 2rem;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(14, 165, 233, 0.12));
+            background: linear-gradient(135deg, rgba(44, 82, 130, 0.16), rgba(26, 54, 93, 0.1));
         }
 
         .page-header__content {
@@ -68,6 +69,76 @@
             flex-direction: column;
             gap: 1.5rem;
             align-items: center;
+            position: relative;
+        }
+
+        .page-header__top {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .page-header__top .page-nav {
+            margin-left: auto;
+        }
+
+        .app-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.35rem 0.8rem;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.55);
+            box-shadow: 0 18px 35px -22px rgba(15, 23, 42, 0.45);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .app-logo:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 22px 45px -20px rgba(44, 82, 130, 0.35);
+            text-decoration: none;
+        }
+
+        .app-logo__mark {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            background: rgba(15, 23, 42, 0.92);
+        }
+
+        .app-logo__mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .app-logo__text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .app-logo__title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent-strong);
+        }
+
+        .app-logo__subtitle {
+            font-size: 0.72rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--muted);
         }
 
         .page-header__title {
@@ -88,7 +159,7 @@
             gap: 0.6rem;
             padding: 0.45rem 0.6rem;
             border-radius: 999px;
-            border: 1px solid rgba(99, 102, 241, 0.18);
+            border: 1px solid rgba(44, 82, 130, 0.18);
             background: rgba(255, 255, 255, 0.22);
             backdrop-filter: blur(6px);
         }
@@ -106,18 +177,18 @@
         }
 
         .page-nav__link:hover {
-            background: rgba(99, 102, 241, 0.12);
+            background: rgba(44, 82, 130, 0.12);
             transform: translateY(-1px);
         }
 
         .page-nav__link.is-active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(79, 70, 229, 0.28));
+            background: linear-gradient(135deg, rgba(44, 82, 130, 0.18), rgba(26, 54, 93, 0.22));
             color: var(--accent-strong);
-            box-shadow: 0 10px 24px -18px rgba(79, 70, 229, 0.6);
+            box-shadow: 0 10px 24px -18px rgba(44, 82, 130, 0.35);
         }
 
         .page-nav__link:focus-visible {
-            outline: 3px solid rgba(99, 102, 241, 0.3);
+            outline: 3px solid rgba(44, 82, 130, 0.28);
             outline-offset: 2px;
         }
 
@@ -143,12 +214,26 @@
             .page-layout {
                 padding: 2rem 1.1rem 2.75rem;
             }
+
+            .page-header__top {
+                flex-direction: column;
+                align-items: center;
+                gap: 1.1rem;
+            }
+
+            .page-header__top .page-nav {
+                margin-left: 0;
+            }
+
+            .app-logo {
+                order: -1;
+            }
         }
 
         .card {
             background: var(--card-bg);
             border-radius: var(--radius-lg);
-            border: 1px solid rgba(226, 232, 240, 0.75);
+            border: 1px solid rgba(213, 219, 230, 0.78);
             box-shadow: var(--shadow-card);
             padding: 1.75rem;
         }
@@ -197,7 +282,7 @@
         .templates-status {
             font-size: 0.88rem;
             color: var(--muted);
-            background: rgba(99, 102, 241, 0.06);
+            background: rgba(44, 82, 130, 0.08);
             border-radius: var(--radius-md);
             padding: 0.6rem 0.8rem;
         }
@@ -231,7 +316,7 @@
             gap: 0.55rem;
             padding: 0.85rem 1rem;
             border-radius: var(--radius-md);
-            border: 1px solid rgba(226, 232, 240, 0.9);
+            border: 1px solid rgba(213, 219, 230, 0.78);
             background: rgba(248, 250, 252, 0.7);
             text-align: left;
             cursor: pointer;
@@ -240,14 +325,14 @@
 
         .template-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 16px 30px -24px rgba(79, 70, 229, 0.75);
-            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 16px 30px -24px rgba(44, 82, 130, 0.42);
+            border-color: rgba(44, 82, 130, 0.26);
         }
 
         .template-item.is-active {
-            border-color: rgba(99, 102, 241, 0.8);
-            background: rgba(99, 102, 241, 0.12);
-            box-shadow: 0 18px 36px -20px rgba(79, 70, 229, 0.6);
+            border-color: rgba(26, 54, 93, 0.45);
+            background: rgba(44, 82, 130, 0.12);
+            box-shadow: 0 18px 36px -20px rgba(44, 82, 130, 0.32);
         }
 
         .template-item__title {
@@ -274,7 +359,7 @@
             gap: 0.25rem;
             padding: 0.25rem 0.55rem;
             border-radius: 999px;
-            background: rgba(79, 70, 229, 0.14);
+            background: rgba(44, 82, 130, 0.14);
             color: var(--accent-strong);
             font-size: 0.75rem;
             font-weight: 600;
@@ -329,7 +414,7 @@
 
         .input-control:focus-visible {
             border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 0 4px rgba(44, 82, 130, 0.2);
             outline: none;
         }
 
@@ -388,7 +473,7 @@
         }
 
         .button--primary {
-            background: linear-gradient(135deg, #6366f1, #4338ca);
+            background: linear-gradient(135deg, #2c5282, #1a365d);
             color: #ffffff;
             box-shadow: var(--shadow-button);
         }
@@ -399,14 +484,14 @@
         }
 
         .button--primary:focus-visible {
-            outline: 3px solid rgba(99, 102, 241, 0.3);
+            outline: 3px solid rgba(44, 82, 130, 0.28);
             outline-offset: 2px;
         }
 
         .button--secondary {
-            background: rgba(15, 23, 42, 0.06);
+            background: rgba(15, 23, 42, 0.05);
             color: var(--text);
-            border: 1px solid rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(15, 23, 42, 0.12);
         }
 
         .button--secondary:hover {
@@ -416,11 +501,11 @@
         .button--ghost {
             background: transparent;
             color: var(--accent-strong);
-            border: 1px solid rgba(79, 70, 229, 0.2);
+            border: 1px solid rgba(44, 82, 130, 0.24);
         }
 
         .button--ghost:hover {
-            background: rgba(79, 70, 229, 0.08);
+            background: rgba(44, 82, 130, 0.1);
         }
 
         .button:disabled {
@@ -509,8 +594,8 @@
         }
 
         .templates-count-pill {
-            background: rgba(99, 102, 241, 0.12);
-            border-color: rgba(99, 102, 241, 0.18);
+            background: rgba(44, 82, 130, 0.12);
+            border-color: rgba(44, 82, 130, 0.2);
             color: var(--accent-strong);
         }
 
@@ -524,11 +609,23 @@
 <body>
     <header class="page-header">
         <div class="page-header__content">
-            <nav class="page-nav" aria-label="Primary">
-                <a href="index.html" class="page-nav__link">Credentials</a>
-                <a href="composer.html" class="page-nav__link">Post Composer</a>
-                <a href="templates.html" class="page-nav__link is-active">Templates</a>
-            </nav>
+            <div class="page-header__top">
+                <a class="app-logo" href="index.html" aria-label="Loki Launcher home">
+                    <span class="app-logo__mark" aria-hidden="true">
+                        <img src="assets/loki-launcher-logo.svg" alt="" />
+                    </span>
+                    <span class="app-logo__text">
+                        <span class="app-logo__title">Loki Launcher</span>
+                        <span class="app-logo__subtitle">Mission Control</span>
+                    </span>
+                </a>
+                <nav class="page-nav" aria-label="Primary">
+                    <a href="index.html" class="page-nav__link">Credentials</a>
+                    <a href="composer.html" class="page-nav__link">Post Composer</a>
+                    <a href="templates.html" class="page-nav__link is-active">Templates</a>
+                    <a href="notifications.html" class="page-nav__link">Notifications</a>
+                </nav>
+            </div>
             <div>
                 <h1 class="page-header__title">Template Library</h1>
                 <p class="page-header__subtitle">Curate reusable snippets for launches, updates, and quick replies. Import existing copy from <code>post.csv</code>, tune it, then drop it into the composer with a single click.</p>
