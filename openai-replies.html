@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Reply Workspace</title>
+    <meta name="description" content="Workspace for managing OpenAI replies, pinned comments, and saved responses.">
+    <style>
+        :root {
+            --bg: #f6f8fb;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --muted: #52606d;
+            --border: #e2e8f0;
+            --accent: #6366f1;
+            --accent-strong: #4f46e5;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --error: #ef4444;
+            --console-bg: #0f172a;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-card: 0 25px 50px -20px rgba(15, 23, 42, 0.25);
+            --shadow-button: 0 18px 35px -18px rgba(79, 70, 229, 0.65);
+            --shadow-button-hover: 0 24px 45px -20px rgba(79, 70, 229, 0.7);
+            --font-sans: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-sans);
+            color: var(--text);
+            background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0) 55%), var(--bg);
+            min-height: 100vh;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        a {
+            color: var(--accent-strong);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .page-header {
+            padding: 3rem 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(14, 165, 233, 0.12));
+        }
+
+        .page-header__content {
+            max-width: 1100px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .page-header__title {
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            margin-bottom: 0.75rem;
+        }
+
+        .page-header__subtitle {
+            margin: 0 auto;
+            max-width: 680px;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .page-header__actions {
+            margin-top: 1.75rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .page-header__link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-lg);
+            background: var(--accent-strong);
+            color: #ffffff;
+            box-shadow: var(--shadow-button);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .page-header__link::before {
+            content: '\2190';
+        }
+
+        .page-header__link:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-button-hover);
+        }
+
+        .page-layout {
+            flex: 1;
+        }
+
+        .page-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .page-grid {
+                grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+                align-items: start;
+            }
+
+            .card--full {
+                grid-column: 1 / -1;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.75);
+            box-shadow: var(--shadow-card);
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .card__header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .card__title {
+            font-size: 1.5rem;
+        }
+
+        .card__description {
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 640px) {
+            .form-grid--two-columns {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .input-label {
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 0.7rem 0.85rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.94);
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .input-control:focus-visible {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+
+        textarea.input-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.65rem 1.25rem;
+            font-size: 0.95rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .button:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .button--primary {
+            background: var(--accent-strong);
+            color: #ffffff;
+            box-shadow: var(--shadow-button);
+        }
+
+        .button--primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-button-hover);
+        }
+
+        .button--secondary {
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--accent-strong);
+        }
+
+        .button--secondary:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.18);
+            transform: translateY(-1px);
+        }
+
+        .button--ghost {
+            background: transparent;
+            color: var(--muted);
+        }
+
+        .button--ghost:hover:not(:disabled) {
+            background: rgba(15, 23, 42, 0.05);
+        }
+
+        .data-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .data-list__item {
+            border: 1px solid rgba(226, 232, 240, 0.85);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.1rem;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .data-list__header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .data-list__content {
+            margin: 0;
+        }
+
+        .data-list__subtle {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .data-list__meta {
+            margin-left: auto;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .data-list__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .badge--high {
+            background: rgba(239, 68, 68, 0.15);
+            color: rgba(220, 38, 38, 0.9);
+        }
+
+        .badge--normal {
+            background: rgba(59, 130, 246, 0.14);
+            color: rgba(37, 99, 235, 0.9);
+        }
+
+        .badge--low {
+            background: rgba(15, 118, 110, 0.12);
+            color: rgba(13, 148, 136, 0.9);
+        }
+
+        .badge--manual {
+            background: rgba(79, 70, 229, 0.14);
+            color: rgba(67, 56, 202, 0.9);
+        }
+
+        .badge--queued {
+            background: rgba(34, 197, 94, 0.14);
+            color: rgba(22, 163, 74, 0.9);
+        }
+
+        .empty-state {
+            border: 2px dashed rgba(226, 232, 240, 0.9);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.95rem;
+            background: rgba(248, 250, 252, 0.7);
+        }
+
+        .activity-log {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .activity-log__item {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+            border-left: 3px solid rgba(59, 130, 246, 0.65);
+            padding: 0.55rem 0.75rem;
+            border-radius: var(--radius-md);
+            background: rgba(59, 130, 246, 0.12);
+            font-size: 0.86rem;
+        }
+
+        .activity-log__item--success {
+            border-left-color: rgba(34, 197, 94, 0.9);
+            background: rgba(34, 197, 94, 0.16);
+        }
+
+        .activity-log__item--error {
+            border-left-color: rgba(239, 68, 68, 0.9);
+            background: rgba(239, 68, 68, 0.16);
+        }
+
+        .activity-log__time {
+            font-variant-numeric: tabular-nums;
+            min-width: 72px;
+            color: rgba(100, 116, 139, 0.9);
+        }
+
+        .activity-log__message {
+            flex: 1;
+        }
+
+        .site-footer {
+            border-top: 1px solid rgba(226, 232, 240, 0.7);
+            text-align: center;
+            padding: 1.75rem 1.5rem;
+            background: rgba(248, 250, 252, 0.85);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-header__content">
+            <h1 class="page-header__title">OpenAI Reply Workspace</h1>
+            <p class="page-header__subtitle">Plan and track OpenAI replies, keep important comments pinned, and preserve the responses your team uses most.</p>
+            <div class="page-header__actions">
+                <a class="page-header__link" href="index.html">Back to API Key Manager</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="page-layout">
+        <div class="page-grid">
+            <article class="card card--full" id="reply-center">
+                <div class="card__header">
+                    <h2 class="card__title">Reply Planning</h2>
+                    <p class="card__description">Capture upcoming replies, note priority, and keep a running list of who needs a response.</p>
+                </div>
+                <form id="reply-form" class="form-grid" autocomplete="off">
+                    <div class="form-grid form-grid--two-columns">
+                        <div class="form-row">
+                            <label class="input-label" for="reply-comment-id">Comment ID</label>
+                            <input class="input-control" type="text" id="reply-comment-id" name="commentId" placeholder="e.g. cmnt_9482" required>
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="reply-author">Comment Author (optional)</label>
+                            <input class="input-control" type="text" id="reply-author" name="author" placeholder="Who left the comment?">
+                        </div>
+                        <div class="form-row">
+                            <label class="input-label" for="reply-priority">Priority</label>
+                            <select class="input-control" id="reply-priority" name="priority">
+                                <option value="normal" selected>Normal</option>
+                                <option value="high">High</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label class="input-label" for="reply-message">Draft Reply</label>
+                        <textarea class="input-control" id="reply-message" name="message" placeholder="Outline the reply you want to send" required></textarea>
+                    </div>
+                    <div class="button-row">
+                        <button type="submit" class="button button--primary">Add to Reply Queue</button>
+                    </div>
+                </form>
+                <ul class="data-list" id="reply-list" aria-live="polite" aria-label="Queued replies"></ul>
+            </article>
+
+            <article class="card" id="pin-board">
+                <div class="card__header">
+                    <h2 class="card__title">Pinned Comments</h2>
+                    <p class="card__description">Keep critical threads in sight so your team can return to them quickly.</p>
+                </div>
+                <form id="pin-form" class="form-grid" autocomplete="off">
+                    <div class="form-row">
+                        <label class="input-label" for="pin-comment-id">Comment ID</label>
+                        <input class="input-control" type="text" id="pin-comment-id" name="pinCommentId" placeholder="e.g. cmnt_2041" required>
+                    </div>
+                    <div class="form-row">
+                        <label class="input-label" for="pin-context">Context or Notes</label>
+                        <textarea class="input-control" id="pin-context" name="pinContext" placeholder="Why is this pinned? Include next steps or links."></textarea>
+                    </div>
+                    <div class="button-row">
+                        <button type="submit" class="button button--secondary">Pin Comment</button>
+                    </div>
+                </form>
+                <ul class="data-list" id="pinned-list" aria-live="polite" aria-label="Pinned comments"></ul>
+            </article>
+
+            <article class="card" id="response-archive">
+                <div class="card__header">
+                    <h2 class="card__title">Response Archive</h2>
+                    <p class="card__description">Log the replies you've already shared so teammates can reference them later.</p>
+                </div>
+                <form id="response-form" class="form-grid" autocomplete="off">
+                    <div class="form-row">
+                        <label class="input-label" for="response-comment-id">Comment ID (optional)</label>
+                        <input class="input-control" type="text" id="response-comment-id" name="responseCommentId" placeholder="e.g. cmnt_5120">
+                    </div>
+                    <div class="form-row">
+                        <label class="input-label" for="response-summary">Response Summary</label>
+                        <textarea class="input-control" id="response-summary" name="responseSummary" placeholder="Summarize the response that was sent" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label class="input-label" for="response-details">Additional Notes (optional)</label>
+                        <textarea class="input-control" id="response-details" name="responseDetails" placeholder="Add links, follow-up actions, or internal notes."></textarea>
+                    </div>
+                    <div class="button-row">
+                        <button type="submit" class="button button--primary">Archive Response</button>
+                    </div>
+                </form>
+                <ul class="data-list" id="response-list" aria-live="polite" aria-label="Archived responses"></ul>
+            </article>
+
+            <article class="card card--full" id="activity-card">
+                <div class="card__header">
+                    <h2 class="card__title">Activity Feed</h2>
+                    <p class="card__description">A real-time snapshot of the most recent actions taken in this workspace.</p>
+                </div>
+                <ul class="activity-log" id="activity-log" aria-live="polite" aria-label="Activity log"></ul>
+            </article>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        created by Travis Ramsey Urbakayaker007@icloud.com
+    </footer>
+
+    <script>
+        (() => {
+            const state = {
+                replies: [],
+                pinned: [],
+                responses: []
+            };
+
+            const ESCAPE_MAP = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            };
+
+            const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (char) => ESCAPE_MAP[char] || char);
+            const formatDate = (date) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+
+            const replyForm = document.getElementById('reply-form');
+            const replyList = document.getElementById('reply-list');
+            const pinForm = document.getElementById('pin-form');
+            const pinnedList = document.getElementById('pinned-list');
+            const responseForm = document.getElementById('response-form');
+            const responseList = document.getElementById('response-list');
+            const activityLog = document.getElementById('activity-log');
+
+            const priorityBadge = (priority) => {
+                switch (priority) {
+                    case 'high':
+                        return { label: 'High Priority', className: 'badge--high' };
+                    case 'low':
+                        return { label: 'Low Priority', className: 'badge--low' };
+                    default:
+                        return { label: 'Normal Priority', className: 'badge--normal' };
+                }
+            };
+
+            const logAction = (message, type = 'info') => {
+                if (!activityLog) return;
+                const entry = document.createElement('li');
+                entry.className = `activity-log__item activity-log__item--${type}`;
+
+                const time = document.createElement('span');
+                time.className = 'activity-log__time';
+                time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const text = document.createElement('span');
+                text.className = 'activity-log__message';
+                text.textContent = message;
+
+                entry.append(time, text);
+                activityLog.prepend(entry);
+
+                while (activityLog.children.length > 12) {
+                    activityLog.removeChild(activityLog.lastElementChild);
+                }
+            };
+
+            const renderReplies = () => {
+                if (!replyList) return;
+                if (!state.replies.length) {
+                    replyList.innerHTML = '<li class="empty-state">No replies queued yet. Add the next message you want to send above.</li>';
+                    return;
+                }
+
+                replyList.innerHTML = state.replies
+                    .map((reply, index) => {
+                        const badge = priorityBadge(reply.priority);
+                        const authorLine = reply.author ? `<p class="data-list__subtle">From ${escapeHTML(reply.author)}</p>` : '';
+                        return `
+                            <li class="data-list__item">
+                                <div class="data-list__header">
+                                    <span class="badge ${badge.className}">${badge.label}</span>
+                                    <span class="data-list__subtle">Comment #${escapeHTML(reply.commentId)}</span>
+                                    <span class="data-list__meta">${formatDate(reply.createdAt)}</span>
+                                </div>
+                                ${authorLine}
+                                <p class="data-list__content">${escapeHTML(reply.message)}</p>
+                                <div class="data-list__actions">
+                                    <button type="button" class="button button--secondary" data-action="mark-sent" data-index="${index}">Mark Responded</button>
+                                    <button type="button" class="button button--ghost" data-action="remove-reply" data-index="${index}">Remove</button>
+                                </div>
+                            </li>
+                        `;
+                    })
+                    .join('');
+            };
+
+            const renderPinned = () => {
+                if (!pinnedList) return;
+                if (!state.pinned.length) {
+                    pinnedList.innerHTML = '<li class="empty-state">No pinned comments yet. Pin a comment to keep it visible.</li>';
+                    return;
+                }
+
+                pinnedList.innerHTML = state.pinned
+                    .map((item, index) => {
+                        const notes = item.context ? `<p class="data-list__content">${escapeHTML(item.context)}</p>` : '';
+                        return `
+                            <li class="data-list__item">
+                                <div class="data-list__header">
+                                    <span class="badge badge--queued">Pinned</span>
+                                    <span class="data-list__subtle">Comment #${escapeHTML(item.commentId)}</span>
+                                    <span class="data-list__meta">${formatDate(item.pinnedAt)}</span>
+                                </div>
+                                ${notes}
+                                <div class="data-list__actions">
+                                    <button type="button" class="button button--ghost" data-action="unpin" data-index="${index}">Unpin</button>
+                                </div>
+                            </li>
+                        `;
+                    })
+                    .join('');
+            };
+
+            const renderResponses = () => {
+                if (!responseList) return;
+                if (!state.responses.length) {
+                    responseList.innerHTML = '<li class="empty-state">No archived responses yet. Mark a reply as responded or log one manually above.</li>';
+                    return;
+                }
+
+                responseList.innerHTML = state.responses
+                    .map((response, index) => {
+                        const sourceBadge = response.via === 'manual'
+                            ? '<span class="badge badge--manual">Manual Entry</span>'
+                            : '<span class="badge badge--queued">Queued Reply</span>';
+                        const commentLabel = response.commentId
+                            ? `<span class="data-list__subtle">Comment #${escapeHTML(response.commentId)}</span>`
+                            : '<span class="data-list__subtle">General Response</span>';
+                        const notes = response.notes ? `<p class="data-list__subtle">${escapeHTML(response.notes)}</p>` : '';
+                        return `
+                            <li class="data-list__item">
+                                <div class="data-list__header">
+                                    ${sourceBadge}
+                                    ${commentLabel}
+                                    <span class="data-list__meta">${formatDate(response.respondedAt)}</span>
+                                </div>
+                                <p class="data-list__content">${escapeHTML(response.message)}</p>
+                                ${notes}
+                                <div class="data-list__actions">
+                                    <button type="button" class="button button--secondary" data-action="copy-response" data-index="${index}">Copy Text</button>
+                                    <button type="button" class="button button--ghost" data-action="remove-response" data-index="${index}">Remove</button>
+                                </div>
+                            </li>
+                        `;
+                    })
+                    .join('');
+            };
+
+            const copyToClipboard = async (text) => {
+                if (!text) return false;
+                try {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch (error) {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'absolute';
+                    textarea.style.left = '-9999px';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    return successful;
+                }
+            };
+
+            if (replyForm) {
+                replyForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    const formData = new FormData(replyForm);
+                    const commentId = formData.get('commentId')?.toString().trim();
+                    const author = formData.get('author')?.toString().trim();
+                    const priority = formData.get('priority')?.toString() || 'normal';
+                    const message = formData.get('message')?.toString().trim();
+
+                    if (!commentId || !message) {
+                        logAction('Please provide both a comment ID and a draft reply.', 'error');
+                        return;
+                    }
+
+                    state.replies.unshift({
+                        commentId,
+                        author,
+                        priority,
+                        message,
+                        createdAt: new Date()
+                    });
+
+                    replyForm.reset();
+                    document.getElementById('reply-comment-id')?.focus({ preventScroll: true });
+                    renderReplies();
+                    logAction(`Reply queued for comment #${commentId}.`, 'success');
+                });
+            }
+
+            if (replyList) {
+                replyList.addEventListener('click', (event) => {
+                    const button = event.target.closest('button[data-action]');
+                    if (!button) return;
+                    const index = Number.parseInt(button.dataset.index ?? '-1', 10);
+                    if (!Number.isInteger(index) || index < 0) return;
+
+                    const action = button.dataset.action;
+                    if (action === 'mark-sent') {
+                        const [reply] = state.replies.splice(index, 1);
+                        if (!reply) return;
+                        state.responses.unshift({
+                            commentId: reply.commentId,
+                            message: reply.message,
+                            notes: reply.author ? `Replied to ${reply.author}` : '',
+                            respondedAt: new Date(),
+                            via: 'queued'
+                        });
+                        renderReplies();
+                        renderResponses();
+                        logAction(`Response recorded for comment #${reply.commentId}.`, 'success');
+                    }
+
+                    if (action === 'remove-reply') {
+                        const [removed] = state.replies.splice(index, 1);
+                        renderReplies();
+                        if (removed) {
+                            logAction(`Removed reply draft for comment #${removed.commentId}.`, 'info');
+                        }
+                    }
+                });
+            }
+
+            if (pinForm) {
+                pinForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    const formData = new FormData(pinForm);
+                    const commentId = formData.get('pinCommentId')?.toString().trim();
+                    const context = formData.get('pinContext')?.toString().trim();
+
+                    if (!commentId) {
+                        logAction('Add a comment ID before pinning.', 'error');
+                        return;
+                    }
+
+                    state.pinned.unshift({
+                        commentId,
+                        context,
+                        pinnedAt: new Date()
+                    });
+
+                    pinForm.reset();
+                    document.getElementById('pin-comment-id')?.focus({ preventScroll: true });
+                    renderPinned();
+                    logAction(`Pinned comment #${commentId} for follow-up.`, 'success');
+                });
+            }
+
+            if (pinnedList) {
+                pinnedList.addEventListener('click', (event) => {
+                    const button = event.target.closest('button[data-action="unpin"]');
+                    if (!button) return;
+                    const index = Number.parseInt(button.dataset.index ?? '-1', 10);
+                    if (!Number.isInteger(index) || index < 0) return;
+                    const [removed] = state.pinned.splice(index, 1);
+                    renderPinned();
+                    if (removed) {
+                        logAction(`Unpinned comment #${removed.commentId}.`, 'info');
+                    }
+                });
+            }
+
+            if (responseForm) {
+                responseForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    const formData = new FormData(responseForm);
+                    const commentId = formData.get('responseCommentId')?.toString().trim();
+                    const summary = formData.get('responseSummary')?.toString().trim();
+                    const notes = formData.get('responseDetails')?.toString().trim();
+
+                    if (!summary) {
+                        logAction('Add a short summary before archiving a response.', 'error');
+                        return;
+                    }
+
+                    state.responses.unshift({
+                        commentId,
+                        message: summary,
+                        notes,
+                        respondedAt: new Date(),
+                        via: 'manual'
+                    });
+
+                    responseForm.reset();
+                    document.getElementById('response-summary')?.focus({ preventScroll: true });
+                    renderResponses();
+                    logAction('Response archived for future reference.', 'success');
+                });
+            }
+
+            if (responseList) {
+                responseList.addEventListener('click', async (event) => {
+                    const button = event.target.closest('button[data-action]');
+                    if (!button) return;
+                    const index = Number.parseInt(button.dataset.index ?? '-1', 10);
+                    if (!Number.isInteger(index) || index < 0) return;
+                    const action = button.dataset.action;
+                    const response = state.responses[index];
+                    if (!response) return;
+
+                    if (action === 'copy-response') {
+                        const copied = await copyToClipboard(response.message);
+                        if (copied) {
+                            logAction('Response copied to clipboard.', 'success');
+                        } else {
+                            logAction('Unable to copy response text.', 'error');
+                        }
+                        return;
+                    }
+
+                    if (action === 'remove-response') {
+                        state.responses.splice(index, 1);
+                        renderResponses();
+                        logAction('Removed archived response.', 'info');
+                    }
+                });
+            }
+
+            // Initial renders
+            renderReplies();
+            renderPinned();
+            renderResponses();
+        })();
+    </script>
+</body>
+</html>

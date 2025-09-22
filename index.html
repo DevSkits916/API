@@ -68,6 +68,33 @@
             text-align: center;
         }
 
+        .page-header__actions {
+            margin-top: 1.75rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .page-header__link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-lg);
+            background: var(--accent-strong);
+            color: #ffffff;
+            box-shadow: var(--shadow-button);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .page-header__link::before {
+            content: '\2728';
+        }
+
+        .page-header__link:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-button-hover);
+        }
+
         .page-header__title {
             font-size: clamp(2rem, 4vw, 2.8rem);
             margin-bottom: 0.75rem;
@@ -385,6 +412,15 @@
             color: var(--muted);
         }
 
+        .site-footer {
+            border-top: 1px solid rgba(226, 232, 240, 0.7);
+            text-align: center;
+            padding: 1.75rem 1.5rem;
+            background: rgba(248, 250, 252, 0.85);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -410,6 +446,9 @@
         <div class="page-header__content">
             <h1 class="page-header__title">API Key Manager</h1>
             <p class="page-header__subtitle">Collect credentials, validate access, and run quick smoke tests for Facebook, GitHub, Twitter (X), and OpenAI APIs without leaving your browser.</p>
+            <div class="page-header__actions">
+                <a class="page-header__link" href="openai-replies.html">OpenAI Reply Workspace</a>
+            </div>
         </div>
     </header>
 
@@ -992,5 +1031,8 @@
             });
         })();
     </script>
+    <footer class="site-footer">
+        created by Travis Ramsey Urbakayaker007@icloud.com
+    </footer>
 </body>
 </html>
