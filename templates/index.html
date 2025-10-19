@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Composer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Music Composer</h1>
+            <p>Create beautiful music compositions in your browser</p>
+        </header>
+
+        <div class="composer-interface">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="tempo">Tempo (BPM):</label>
+                    <input type="number" id="tempo" value="120" min="40" max="240">
+                </div>
+                <div class="control-group">
+                    <label for="instrument">Instrument:</label>
+                    <select id="instrument">
+                        <option value="piano">Piano</option>
+                        <option value="guitar">Guitar</option>
+                        <option value="strings">Strings</option>
+                        <option value="synth">Synthesizer</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <button id="playBtn" class="btn btn-primary">▶️ Play</button>
+                    <button id="stopBtn" class="btn btn-secondary">⏹️ Stop</button>
+                    <button id="clearBtn" class="btn btn-warning">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <div class="piano-roll">
+                <div class="piano-keys">
+                    <div class="white-keys">
+                        <div class="white-key" data-note="C4">C</div>
+                        <div class="white-key" data-note="D4">D</div>
+                        <div class="white-key" data-note="E4">E</div>
+                        <div class="white-key" data-note="F4">F</div>
+                        <div class="white-key" data-note="G4">G</div>
+                        <div class="white-key" data-note="A4">A</div>
+                        <div class="white-key" data-note="B4">B</div>
+                        <div class="white-key" data-note="C5">C</div>
+                    </div>
+                    <div class="black-keys">
+                        <div class="black-key" data-note="C#4">C#</div>
+                        <div class="black-key" data-note="D#4">D#</div>
+                        <div style="width: 60px;"></div>
+                        <div class="black-key" data-note="F#4">F#</div>
+                        <div class="black-key" data-note="G#4">G#</div>
+                        <div class="black-key" data-note="A#4">A#</div>
+                    </div>
+                </div>
+                
+                <div class="timeline">
+                    <div class="time-marker"></div>
+                    <div class="time-marker"></div>
+                    <div class="time-marker"></div>
+                    <div class="time-marker"></div>
+                </div>
+            </div>
+
+            <div class="composition-area">
+                <label for="composition">Composition:</label>
+                <textarea id="composition" placeholder="Enter your music composition here... Example: C4 E4 G4 | D4 F4 A4"></textarea>
+                <div class="hint">
+                    <strong>Format:</strong> Use note names (C4, D#5, etc.) separated by spaces. Use | for measure breaks.
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="generateMidiBtn" class="btn btn-success">💾 Generate MIDI</button>
+                <button id="saveBtn" class="btn btn-info">📁 Save Composition</button>
+                <button id="loadBtn" class="btn btn-info">📂 Load Composition</button>
+            </div>
+
+            <div class="output-area">
+                <div id="statusMessage" class="status-message"></div>
+                <div id="downloadLink" class="download-link" style="display: none;">
+                    <a id="midiDownload" download="composition.mid">Download MIDI File</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Use:</h3>
+            <ul>
+                <li>Click piano keys to add notes to your composition</li>
+                <li>Or type directly in the composition area</li>
+                <li>Use format: <code>C4 E4 G4 | D4 F4 A4</code></li>
+                <li>Generate MIDI files to use in your DAW</li>
+                <li>Save and load your compositions</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
